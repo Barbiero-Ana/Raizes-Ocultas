@@ -136,13 +136,11 @@ class TelaLogin(QMainWindow):
         """)
         layout.addWidget(self.botao_acessar)
 
-        # Label de registro
+        # label interativa de registro
         self.label_registro = HoverLabel()
         self.label_registro.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.label_registro.linkActivated.connect(self.abrir_tela_cadastro)
         layout.addWidget(self.label_registro)
-
-
 
         self.dec_imagens()
 
