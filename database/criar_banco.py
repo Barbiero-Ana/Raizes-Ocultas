@@ -220,7 +220,25 @@ class Funcoes_DataBase:
             return False, f"Erro ao limpar usuários: {e}"
         finally:
             self.db.fechar_conexao()
-
+    
+    def inserir_cliente(self, nome, email, senha, cpf, endereco, telefone, data_nascimento, idade):
+        conn = self.conectar_no_banco()
+        if conn is None:
+            return None
+            
+        try:
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO Usuario (
+                        nome_usuario, email, cripto_senha
+                    ) VALUES (?, ?, ?)
+                """, (nome, email, senha ))
+                return cursor.lastrowid
+        except Error as e:
+            raise e
+        finally:
+            self.fechar_conexao()
 
 if __name__ == "__main__":
     nome_banco = "rpg_game.db"
