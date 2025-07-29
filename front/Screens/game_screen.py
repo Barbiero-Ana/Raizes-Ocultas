@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt, QOperatingSystemVersion, QSysInfo
+from class_register_screen import ClassRegisterScreen
 
 
 class GameScreen(QMainWindow):
@@ -227,6 +228,11 @@ class GameScreen(QMainWindow):
         botoes_inferiores.setFixedHeight(50)
         botoes_inferiores.move(self.width() - botoes_inferiores.width() - 20, self.height() - botoes_inferiores.height() - 20)
         botoes_inferiores.show()
+        self.btn_novo_jogo.clicked.connect(self.abrir_tela_criar_turma)
+
+    def abrir_tela_criar_turma(self):
+        self.class_register_screen = ClassRegisterScreen(self.show)
+        self.class_register_screen.show()
 
     def adjust_button_font(self, button):
         screen_width = self.width()
