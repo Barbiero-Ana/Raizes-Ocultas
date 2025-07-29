@@ -22,13 +22,11 @@ class GameScreen(QMainWindow):
         font_path = font_path.replace("\\", "/")  # Corrige as barras invertidas
         abs_font_path = os.path.abspath(font_path)
 
-        # Verificar se o arquivo existe
         if os.path.exists(abs_font_path):
             print(f"A fonte foi encontrada: {abs_font_path}")
         else:
             print(f"Erro: Arquivo de fonte não encontrado em {abs_font_path}")
 
-        # Carregar a fonte
         font_id = QFontDatabase.addApplicationFont(abs_font_path)
         print(f"Font ID: {font_id}")
 
