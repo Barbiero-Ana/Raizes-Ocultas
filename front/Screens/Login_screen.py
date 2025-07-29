@@ -282,24 +282,34 @@ class TelaCadastro(QMainWindow):
                 margin-bottom: 8px;
             }
             QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
+                width: 20px;
+                height: 20px;
                 border: 2px solid #130060;
                 border-radius: 4px;
                 background-color: #fff;
+                image: url('assets/ScreenElements/checked-icon.png');
+                text-align: center;
             }
             QCheckBox::indicator:checked {
                 background-color: #130060;
                 border: 2px solid #130060;
+                image: url('assets/ScreenElements/checked-icon.png');
             }
             QCheckBox::indicator:unchecked {
                 background-color: #fff;
+                border: 2px solid #130060;
+                image: url('assets/ScreenElements/unchecked-icon.png');
             }
             QCheckBox:hover {
                 color: #130060;
             }
         """)
+
         layout.addWidget(self.checkbox_termos)
+
+
+
+
 
 
 
