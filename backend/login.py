@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, QListWidgetItem
                             QLineEdit, QRadioButton, QCheckBox, QComboBox, QDateEdit)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QDate
 from PyQt6 import uic
-from database.criar_banco import Database
+from database.criar_banco import Database, Funcoes_DataBase
 import sys
 from validador import Validador
 import requests
@@ -11,56 +11,78 @@ import hashlib
 
 class Login:
     def __init__(self):
-        super().__init__()
-        self.db = Database("Raizes_Ocultas")
+        # Removido o super().__init__() pois não há herança
+        self.db = Funcoes_DataBase("Raizes_Ocultas.db")  # Usando Funcoes_DataBase corretamente
     
-    def salvar_cliente(self):
-        # Coleta dados dos campos
-        campos = {
-            'Nome': self.nome.text(),
-            'Email': self.email.text(),
-            'Senha': self.senha.text()
-        }
-
-        # Validar campos obrigatórios
-        for campo, valor in campos.items():
-            if not valor.strip():
-                Validador.mostrar_erro(self, "Campo obrigatório", f"O campo {campo} é obrigatório")
-                return
-
-        # Validar CPF
-        valido, msg = Validador.validar_cpf(campos['CPF'], self.db)
-        if not valido:
-            Validador.mostrar_erro(self, "CPF inválido", msg)
-            return
+    def verificar_credenciais(self, email: str, senha: str) -> tuple:
+        """
+        Verifica as credenciais de login do usuário
         
-        # Validar Email
-        valido, msg = Validador.validar_email(campos['Email'])
-        if not valido:
-            Validador.mostrar_erro(self, "Email inválido", msg)
-            return
-        
-        # Hash da senha
-        senha_hash = hashlib.sha256(campos['Senha'].encode()).hexdigest()
-        
+        Args:
+            email: Email do usuário
+            senha: Senha em texto puro (será hasheada para comparação)
+            
+        Returns:
+            tuple: (sucesso: bool, mensagem: str, id_usuario: int)
+        """
+        conn = self.db.db.conectar_no_banco()  # Acessando a conexão através do db interno
+        if conn is None:
+            return False, "Erro ao conectar ao banco", None
+            
         try:
-            # Insere cliente no banco de dados
-            id_cliente = self.db.inserir_cliente(
-                nome=campos['Nome'].strip(),
-                email=campos['Email'].strip(),
-                senha=senha_hash
-            )
-            
-            QMessageBox.information(self, "Sucesso", "Cliente cadastrado com sucesso!")
-            return True
-            
-        except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in str(e):
-                Validador.mostrar_erro(self, "Erro", "Este CPF ou Email já está cadastrado no sistema.")
-            else:
-                Validador.mostrar_erro(self, "Erro", f"Erro de integridade: {str(e)}")
-            return False
+            with conn:
+                cursor = conn.cursor()
+                
+                # Hash da senha fornecida
+                senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+                
+                # Busca usuário pelo email
+                cursor.execute("""
+                    SELECT id_usuario, cripto_senha, deletado 
+                    FROM Usuario 
+                    WHERE email = ?
+                """, (email,))
+                
+                usuario = cursor.fetchone()
+                
+                if not usuario:
+                    return False, "Email não cadastrado", None
+                    
+                id_usuario, hash_armazenado, deletado = usuario
+                
+                if deletado:
+                    return False, "Conta desativada", None
+                    
+                if senha_hash != hash_armazenado:
+                    return False, "Senha incorreta", None
+                    
+                return True, "Login bem-sucedido", id_usuario
+                
+        except sqlite3.Error as e:
+            print(f"Erro ao verificar login: {e}")
+            return False, f"Erro no banco de dados: {e}", None
+        finally:
+            self.db.db.fechar_conexao()
+
+    def realizar_login(self, email: str, senha: str) -> tuple:
+        """
+        Realiza o processo completo de login com validações
         
-        except Exception as e:
-            QMessageBox.critical(self, "Erro", f'Erro ao cadastrar cliente: {str(e)}')
-            return False
+        Args:
+            email: Email do usuário
+            senha: Senha em texto puro
+            
+        Returns:
+            tuple: (sucesso: bool, mensagem: str, id_usuario: int)
+        """
+        # Validação básica dos campos
+        if not email.strip() or not senha.strip():
+            return False, "Preencha todos os campos", None
+            
+        # Valida formato do email
+        valido, msg = Validador.validar_email(email)
+        if not valido:
+            return False, msg, None
+            
+        # Verifica credenciais no banco
+        return self.verificar_credenciais(email, senha)  # Corrigido para chamar verificar_credenciais
