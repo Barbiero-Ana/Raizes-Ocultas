@@ -282,20 +282,25 @@ class TelaCadastro(QMainWindow):
                 margin-bottom: 8px;
             }
             QCheckBox::indicator {
-                width: 20px;
-                height: 20px;
-                border: 2px solid #444;
-                background-color: white;
+                width: 18px;
+                height: 18px;
+                border: 2px solid #130060;
+                border-radius: 4px;
+                background-color: #fff;
             }
             QCheckBox::indicator:checked {
                 background-color: #130060;
                 border: 2px solid #130060;
             }
             QCheckBox::indicator:unchecked {
-                background-color: white;
+                background-color: #fff;
+            }
+            QCheckBox:hover {
+                color: #130060;
             }
         """)
         layout.addWidget(self.checkbox_termos)
+
 
 
 
