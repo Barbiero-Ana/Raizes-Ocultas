@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QLabel, QPushButton, QWidget, QVBoxLayout, QHBoxLayout,
     QSpacerItem, QSizePolicy, QFrame
 )
-from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase
+from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt
 
 
@@ -15,12 +15,16 @@ class GameScreen(QMainWindow):
         self.setFixedSize(1000, 700)
 
         # --- Fonte 
-        font_id = QFontDatabase.addApplicationFont("assets/fonts/AnalogWhispers.ttf")
+        font_id = QFontDatabase.addApplicationFont("/Users/anabarbiero/Documents/GitHub/Raizes-Ocultas/assets/fonts/DUNGRG__.TTF")
+        print("Font ID:", font_id)
         if font_id != -1:
             families = QFontDatabase.applicationFontFamilies(font_id)
+            print("Families found:", families)
             self.fonte_medieval = families[0] if families else "Georgia"
         else:
+            print("Falha ao carregar a fonte!")
             self.fonte_medieval = "Georgia"
+
 
         # --- Central widget ---
         central_widget = QWidget(self)
@@ -46,30 +50,33 @@ class GameScreen(QMainWindow):
 
         self.btn_voltar = QPushButton("Sair")
         self.btn_voltar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_voltar.setFixedSize(130, 50)  
-        self.btn_voltar.setStyleSheet(f"""
-            QPushButton {{
+        self.btn_voltar.setFixedSize(130, 50)
+
+        font_botao = QFont(self.fonte_medieval, 30)
+        self.btn_voltar.setFont(font_botao)
+
+        self.btn_voltar.setStyleSheet("""
+            QPushButton {
                 background-repeat: repeat;
                 color: #d9c27f;
                 font-weight: bold;
-                font-size: 17px;
-                padding: 14px 10px;
+                padding: 10px 9px;
                 border-radius: 14px;
                 border: 3px solid #7a6f44;
-                font-family: "{self.fonte_medieval}";
-                qproperty-alignment: AlignCenter;
-            }}
-            QPushButton:hover {{
+                /* não precisa font-family aqui */
+            }
+            QPushButton:hover {
                 background-color: #556b2f88;
                 border-color: #f5e86c;
                 color: #fff8dc;
-            }}
-            QPushButton:pressed {{
+            }
+            QPushButton:pressed {
                 background-color: #3e4f1eaa;
                 border-color: #cfc28c;
                 color: #b9a75b;
-            }}
+            }
         """)
+
         self.btn_voltar.clicked.connect(self.voltar_para_login)
 
 
@@ -108,7 +115,7 @@ class GameScreen(QMainWindow):
                 background-repeat: repeat;
                 color: #d9c27f;
                 font-weight: bold;
-                font-size: 20px;
+                font-size: 30px;
                 padding: 14px 60px;
                 border-radius: 14px;
                 border: 3px solid #7a6f44;
@@ -156,7 +163,7 @@ class GameScreen(QMainWindow):
 
         frame_novo, self.btn_novo_jogo = criar_botao_com_icone("Nova Turma")
         frame_carregar, self.btn_carregar_jogo = criar_botao_com_icone("Carregar Turma")
-        frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatísticas")
+        frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatisticas")
 
         botoes_layout.addWidget(frame_novo)
         botoes_layout.addWidget(frame_carregar)
@@ -177,7 +184,7 @@ class GameScreen(QMainWindow):
                 background-repeat: repeat;
                 color: #d9c27f;
                 font-weight: bold;
-                font-size: 16px;
+                font-size: 24px;
                 padding: 10px 10px;
                 border-radius: 12px;
                 border: 2px solid #7a6f44;
