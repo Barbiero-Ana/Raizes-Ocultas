@@ -9,12 +9,12 @@ from PyQt6.QtCore import Qt
 class GameScreen(QMainWindow):
     def __init__(self, tela_login=None):
         super().__init__()
-        self.tela_login = tela_login  # referência opcional para tela login
+        self.tela_login = tela_login 
 
         self.setWindowTitle("Raízes Ocultas - Jogo")
         self.setFixedSize(1000, 700)
 
-        # --- Fonte medieval ---
+        # --- Fonte 
         font_id = QFontDatabase.addApplicationFont("assets/fonts/AnalogWhispers.ttf")
         if font_id != -1:
             families = QFontDatabase.applicationFontFamilies(font_id)
@@ -26,14 +26,14 @@ class GameScreen(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
-        # Background com cover, mas para manter aspecto use 'contain' (imagem toda visível)
+        # --- Background 
         central_widget.setStyleSheet("""
             QWidget {
                 background-image: url('assets/ScreenElements/gamescreen/background-game.png');
                 background-repeat: no-repeat;
                 background-position: center;
-                background-size: contain;
-                background-color: #1a1a1a; /* cor base escura */
+                background-size: cover;
+                background-color: #1a1a1a;
             }
         """)
 
@@ -57,14 +57,12 @@ class GameScreen(QMainWindow):
                 font-size: 14px;
                 border-radius: 8px;
                 border: 2px solid #6A52A3;
-                font-family: "{self.fonte_medieval}", serif;
-                text-shadow: 1px 1px 2px #000000bb;
+                font-family: "{self.fonte_medieval}";
             }}
             QPushButton:hover {{
                 background-color: #5A4AA0;
                 border-color: #FFD700;
                 color: #FFFACD;
-                box-shadow: 0 0 10px #FFD700;
             }}
             QPushButton:pressed {{
                 background-color: #3E3278;
@@ -80,19 +78,13 @@ class GameScreen(QMainWindow):
 
         # --- Logo topo central ---
         self.logo_top = QLabel()
-        pixmap_logo = QPixmap("assets/ScreenElements/logo_game.png")
+        pixmap_logo = QPixmap("assets/ScreenElements/gamescreen/logo-temp.png")
         if not pixmap_logo.isNull():
-            self.logo_top.setPixmap(pixmap_logo.scaledToWidth(300, Qt.TransformationMode.SmoothTransformation))
+            self.logo_top.setPixmap(pixmap_logo.scaledToWidth(200, Qt.TransformationMode.SmoothTransformation))
         self.logo_top.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.logo_top.setStyleSheet(f"""
-            font-family: "{self.fonte_medieval}", serif;
-            font-size: 32px;
-            color: #cfc28c;
-            text-shadow: 2px 2px 4px #000000cc;
-        """)
         main_layout.addWidget(self.logo_top)
 
-        main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        main_layout.addSpacerItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
         # --- Container dos botões ---
         botoes_container = QWidget()
@@ -100,23 +92,20 @@ class GameScreen(QMainWindow):
         botoes_layout.setSpacing(25)
         botoes_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        # Estilo base botão com textura, bordas e sombra dourada
         estilo_botao = f"""
             QPushButton {{
-                background-image: url('assets/textures/leather_texture.png');
                 background-repeat: repeat;
                 color: #d9c27f;
                 font-weight: bold;
                 font-size: 20px;
-                padding: 14px 40px 14px 60px; /* padding left maior p/ ícone */
+                padding: 14px 60px;
                 border-radius: 14px;
                 border: 3px solid #7a6f44;
-                box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.7);
-                font-family: "{self.fonte_medieval}", serif;
-                text-shadow: 2px 2px 3px #000000cc;
+                font-family: "{self.fonte_medieval}";
+                qproperty-alignment: AlignCenter;
             }}
             QPushButton:hover {{
-                background-color: #556b2f88; /* verde escuro translúcido sobre couro */
+                background-color: #556b2f88;
                 border-color: #f5e86c;
                 color: #fff8dc;
                 box-shadow: 0 0 15px #f5e86c;
@@ -125,20 +114,21 @@ class GameScreen(QMainWindow):
                 background-color: #3e4f1eaa;
                 border-color: #cfc28c;
                 color: #b9a75b;
-                box-shadow: inset 0 0 5px #9a8f50;
             }}
         """
 
-        # --- Criar botões com ícone runa à esquerda ---
+        
         def criar_botao_com_icone(texto):
             botao_frame = QFrame()
+            botao_frame.setFixedWidth(360)
+
             botao_layout = QHBoxLayout(botao_frame)
             botao_layout.setContentsMargins(0, 0, 0, 0)
             botao_layout.setSpacing(15)
             botao_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
             lbl_icone = QLabel()
-            pixmap_icone = QPixmap("assets/icons/runa.png").scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pixmap_icone = QPixmap("assets/ScreenElements/icons/runa.png").scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             lbl_icone.setPixmap(pixmap_icone)
             lbl_icone.setFixedSize(36, 36)
             botao_layout.addWidget(lbl_icone)
@@ -147,11 +137,12 @@ class GameScreen(QMainWindow):
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(estilo_botao)
             btn.setFixedHeight(56)
+            btn.setMinimumWidth(300)  # largura mínima uniforme
+            btn.setMaximumWidth(300)
             botao_layout.addWidget(btn)
 
             return botao_frame, btn
 
-        # Criar botões
         frame_novo, self.btn_novo_jogo = criar_botao_com_icone("Novo Jogo")
         frame_carregar, self.btn_carregar_jogo = criar_botao_com_icone("Carregar Jogo")
         frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatísticas")
@@ -162,6 +153,56 @@ class GameScreen(QMainWindow):
 
         main_layout.addWidget(botoes_container)
         main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+
+        # --- Botões no canto inferior direito ---
+        botoes_inferiores = QWidget(central_widget)
+        botoes_inferiores_layout = QHBoxLayout(botoes_inferiores)
+        botoes_inferiores_layout.setSpacing(15)
+        botoes_inferiores_layout.setContentsMargins(0, 0, 0, 0)
+        botoes_inferiores_layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
+
+        estilo_botao_pequeno = f"""
+            QPushButton {{
+                background-repeat: repeat;
+                color: #d9c27f;
+                font-weight: bold;
+                font-size: 16px;
+                padding: 10px 20px;
+                border-radius: 12px;
+                border: 2px solid #7a6f44;
+                font-family: "{self.fonte_medieval}";
+                qproperty-alignment: AlignCenter;
+            }}
+            QPushButton:hover {{
+                background-color: #556b2f88;
+                border-color: #f5e86c;
+                color: #fff8dc;
+                box-shadow: 0 0 12px #f5e86c;
+            }}
+            QPushButton:pressed {{
+                background-color: #3e4f1eaa;
+                border-color: #cfc28c;
+                color: #b9a75b;
+            }}
+        """
+
+        self.btn_equipe = QPushButton("Equipe")
+        self.btn_equipe.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_equipe.setStyleSheet(estilo_botao_pequeno)
+        self.btn_equipe.setFixedSize(100, 40)
+
+        self.btn_projeto = QPushButton("Projeto")
+        self.btn_projeto.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_projeto.setStyleSheet(estilo_botao_pequeno)
+        self.btn_projeto.setFixedSize(100, 40)
+
+        botoes_inferiores_layout.addWidget(self.btn_projeto)
+        botoes_inferiores_layout.addWidget(self.btn_equipe)
+
+        botoes_inferiores.setFixedWidth(230)
+        botoes_inferiores.setFixedHeight(50)
+        botoes_inferiores.move(self.width() - botoes_inferiores.width() - 20, self.height() - botoes_inferiores.height() - 20)
+        botoes_inferiores.show()
 
     def voltar_para_login(self):
         self.close()
