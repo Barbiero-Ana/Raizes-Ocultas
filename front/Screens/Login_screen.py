@@ -2,10 +2,11 @@ import sys
 import re
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QLabel, QPushButton,
-    QLineEdit, QCheckBox, QWidget, QVBoxLayout
+    QLineEdit, QCheckBox, QWidget, QVBoxLayout, QStackedWidget, QGraphicsOpacityEffect,
 )
 from PyQt6.QtGui import QPixmap, QCursor, QIcon
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QPropertyAnimation
+from game_screen import GameScreen 
 
 
 class HoverLabel(QLabel):
@@ -52,6 +53,7 @@ class TelaLogin(QMainWindow):
         self.setWindowTitle("Raízes Ocultas - Login")
         self.setFixedSize(1000, 700)
         self.setStyleSheet("background-color: white;")
+        
 
         # Container central
         central_widget = QWidget()
@@ -119,6 +121,7 @@ class TelaLogin(QMainWindow):
             border-radius: 5px;
         """)
         layout.addWidget(self.botao_acessar)
+        self.botao_acessar.clicked.connect(self.abrir_game_animacao)
 
         # Label para registro
         self.label_registro = HoverLabel()
@@ -127,6 +130,8 @@ class TelaLogin(QMainWindow):
         layout.addWidget(self.label_registro)
 
         self.dec_imagens()
+        self.botao_acessar.clicked.connect(self.abrir_game_animacao)
+
 
     def abrir_tela_cadastro(self):
         self.tela_cadastro = TelaCadastro(tela_login_callback=self.show)
@@ -151,111 +156,178 @@ class TelaLogin(QMainWindow):
         label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         label.show()
 
-# ---------------------------------- cadastro ---------------
+# ----------- game screen transition ---------------
 
+    def abrir_game_animacao(self):
+        self.animar_transicao(self.ir_game_screen)
+
+    def animar_transicao(self, ao_terminar_callback):
+        self.effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.effect)
+
+        self.animacao = QPropertyAnimation(self.effect, b"opacity")
+        self.animacao.setDuration(700)
+        self.animacao.setStartValue(1.0)
+        self.animacao.setEndValue(0.0)
+        self.animacao.finished.connect(lambda: (
+            self.setGraphicsEffect(None),  
+            ao_terminar_callback(fade_in=True)
+        ))
+        self.animacao.start()
+
+
+    def ir_game_screen(self, fade_in=False):
+        self.tela_game = GameScreen(tela_login=self)  # <- passa referência da tela de login aqui
+        self.tela_game.show()
+
+        if fade_in:
+            effect_new = QGraphicsOpacityEffect(self.tela_game)
+            self.tela_game.setGraphicsEffect(effect_new)
+
+            self.anim_in = QPropertyAnimation(effect_new, b"opacity")  
+            self.anim_in.setDuration(700)
+            self.anim_in.setStartValue(0.0)
+            self.anim_in.setEndValue(1.0)
+            self.anim_in.start()
+
+            self.close()
+        else:
+            self.close()
+
+
+
+
+
+# ---------------------------------- cadastro ---------------
 
 class TelaCadastro(QMainWindow):
     def __init__(self, tela_login_callback):
         super().__init__()
         self.setWindowTitle("Raízes Ocultas - Cadastro")
-        self.setFixedSize(400, 600)
-        self.setStyleSheet("background-color: white;")
+        self.setFixedSize(420, 640)
+        self.setStyleSheet("background-color: #F8F8F8;")
         self.tela_login_callback = tela_login_callback
 
-        # Central widget e layout principal
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
-        layout.setSpacing(15)
+        layout.setSpacing(10)
         central.setLayout(layout)
 
-        # Logo com transparência e aspecto mantido
+        # Logo
         self.logo = QLabel()
-        self.logo.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.logo.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         pixmap = QPixmap("assets/ScreenElements/MT-bandeira-logo.png")
         if not pixmap.isNull():
-            self.logo.setPixmap(pixmap.scaled(200, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        else:
-            self.logo.setText("Logo não encontrada")
-            self.logo.setStyleSheet("color: red; font-size: 14px;")
-        self.logo.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            self.logo.setPixmap(pixmap.scaled(160, 80, Qt.AspectRatioMode.KeepAspectRatio))
         layout.addWidget(self.logo)
 
         estilo_input = """
             QLineEdit {
-                padding-left: 10px;
+                padding: 9px;
                 font-size: 14px;
                 border: 1px solid #ccc;
-                border-radius: 5px;
+                border-radius: 6px;
                 background-color: white;
-                color: #000;
+                color: black;
             }
             QLineEdit::placeholder {
-                color: #888;
+                color: #aaa;
             }
         """
 
-        # Campos de entrada
-        self.input_email = QLineEdit()
-        self.input_email.setPlaceholderText("E-mail")
-        self.input_email.setFixedSize(320, 40)
-        self.input_email.setStyleSheet(estilo_input)
-        layout.addWidget(self.input_email)
+        def add_input(label_text, line_edit):
+            label = QLabel(label_text)
+            label.setStyleSheet("font-size: 13px; color: #333;")
+            layout.addWidget(label)
+            layout.addWidget(line_edit)
 
+        # Email
+        self.input_email = QLineEdit()
+        self.input_email.setPlaceholderText("exemplo@email.com")
+        self.input_email.setFixedSize(360, 40)
+        self.input_email.setStyleSheet(estilo_input)
+        add_input("E-mail:", self.input_email)
+
+        # Senha
         self.input_senha = QLineEdit()
-        self.input_senha.setPlaceholderText("Senha")
+        self.input_senha.setPlaceholderText("Digite sua senha")
         self.input_senha.setEchoMode(QLineEdit.EchoMode.Password)
-        self.input_senha.setFixedSize(320, 40)
+        self.input_senha.setFixedSize(360, 40)
         self.input_senha.setStyleSheet(estilo_input)
         self.input_senha.textChanged.connect(self.atualiza_forca_senha)
-        layout.addWidget(self.input_senha)
+        add_input("Senha:", self.input_senha)
 
-        self.label_forca_senha = QLabel("Força da senha: ")
-        self.label_forca_senha.setStyleSheet("font-size: 12px; color: #555;")
+        # Força da senha
+        self.label_forca_senha = QLabel("")
+        self.label_forca_senha.setStyleSheet("font-size: 12px; color: #666;")
         layout.addWidget(self.label_forca_senha)
 
+        # Repetir Senha
         self.input_repetir_senha = QLineEdit()
         self.input_repetir_senha.setPlaceholderText("Repita a senha")
         self.input_repetir_senha.setEchoMode(QLineEdit.EchoMode.Password)
-        self.input_repetir_senha.setFixedSize(320, 40)
+        self.input_repetir_senha.setFixedSize(360, 40)
         self.input_repetir_senha.setStyleSheet(estilo_input)
-        layout.addWidget(self.input_repetir_senha)
+        add_input("Confirmar senha:", self.input_repetir_senha)
 
-        self.checkbox_termos = QCheckBox("Aceito os termos de uso e a política de privacidade")
-        self.checkbox_termos.setStyleSheet("font-size: 13px; color: #333;")
+        # Checkbox Termos
+        self.checkbox_termos = QCheckBox("Li e aceito os Termos de Uso e Política de Privacidade.")
+        self.checkbox_termos.setStyleSheet("font-size: 13px; color: #444; margin-top: 8px; margin-bottom: 8px;")
         layout.addWidget(self.checkbox_termos)
 
-        self.label_captcha = QLabel("Quanto é 3 + 4?")
-        self.label_captcha.setStyleSheet("font-size: 13px;")
+        # Captcha
+        self.label_captcha = QLabel("Pergunta de segurança: Quanto é 3 + 4?")
+        self.label_captcha.setStyleSheet("font-size: 13px; color: #333;")
         layout.addWidget(self.label_captcha)
 
         self.input_captcha = QLineEdit()
         self.input_captcha.setPlaceholderText("Sua resposta")
-        self.input_captcha.setFixedSize(320, 40)
+        self.input_captcha.setFixedSize(360, 40)
         self.input_captcha.setStyleSheet(estilo_input)
         layout.addWidget(self.input_captcha)
 
-        # Botão de cadastro
+        # Botão Cadastrar
         self.btn_cadastrar = QPushButton("Cadastrar")
         self.btn_cadastrar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_cadastrar.setFixedSize(320, 40)
-        self.btn_cadastrar.setStyleSheet("font-size: 14px;")
+        self.btn_cadastrar.setFixedSize(360, 45)
+        self.btn_cadastrar.setStyleSheet("""
+            QPushButton {
+                background-color: #130060;
+                color: white;
+                border-radius: 6px;
+                font-size: 15px;
+            }
+            QPushButton:hover {
+                background-color: #110444;
+            }
+        """)
         self.btn_cadastrar.clicked.connect(self.tentar_cadastrar)
         layout.addWidget(self.btn_cadastrar)
 
-        # Botão voltar
+        # Botão Voltar
         self.btn_voltar = QPushButton("Voltar para Login")
         self.btn_voltar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_voltar.setFixedSize(320, 30)
-        self.btn_voltar.setStyleSheet("font-size: 13px;")
+        self.btn_voltar.setFixedSize(360, 35)
+        self.btn_voltar.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: #110444;
+                font-size: 13px;
+                border: none;
+            }
+            QPushButton:hover {
+                text-decoration: underline;
+            }
+        """)
         self.btn_voltar.clicked.connect(self.voltar_login)
         layout.addWidget(self.btn_voltar)
 
+        # Mensagem
         self.label_msg = QLabel("")
-        self.label_msg.setWordWrap(True)
         self.label_msg.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label_msg.setWordWrap(True)
         layout.addWidget(self.label_msg)
 
     def voltar_login(self):
@@ -264,34 +336,33 @@ class TelaCadastro(QMainWindow):
             self.tela_login_callback()
 
     def limpa_erro_estilo(self):
-        estilo = """
-            QLineEdit {
-                padding-left: 10px;
-                font-size: 14px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                background-color: white;
-                color: #000;
-            }
-            QLineEdit::placeholder {
-                color: #888;
-            }
-        """
         for campo in [self.input_email, self.input_senha, self.input_repetir_senha, self.input_captcha]:
-            campo.setStyleSheet(estilo)
+            campo.setStyleSheet("""
+                QLineEdit {
+                    padding: 9px;
+                    font-size: 14px;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    background-color: white;
+                    color: #000;
+                }
+                QLineEdit::placeholder {
+                    color: #aaa;
+                }
+            """)
 
     def set_erro_estilo(self, widget):
         widget.setStyleSheet("""
             QLineEdit {
-                padding-left: 10px;
+                padding: 9px;
                 font-size: 14px;
                 border: 2px solid red;
-                border-radius: 5px;
+                border-radius: 6px;
                 background-color: white;
                 color: #000;
             }
             QLineEdit::placeholder {
-                color: #888;
+                color: #aaa;
             }
         """)
 
@@ -325,29 +396,29 @@ class TelaCadastro(QMainWindow):
         erros = []
 
         if not email:
-            erros.append("O campo e-mail é obrigatório.")
+            erros.append("Informe o e-mail.")
             self.set_erro_estilo(self.input_email)
         elif not self.valida_email(email):
             erros.append("Formato de e-mail inválido.")
             self.set_erro_estilo(self.input_email)
 
         if not senha:
-            erros.append("O campo senha é obrigatório.")
+            erros.append("Digite sua senha.")
             self.set_erro_estilo(self.input_senha)
 
         if not repetir:
-            erros.append("Repita a senha no campo correspondente.")
+            erros.append("Repita a senha.")
             self.set_erro_estilo(self.input_repetir_senha)
         elif senha != repetir:
-            erros.append("As senhas não conferem.")
+            erros.append("As senhas não coincidem.")
             self.set_erro_estilo(self.input_senha)
             self.set_erro_estilo(self.input_repetir_senha)
 
         if not termos:
-            erros.append("Você deve aceitar os termos de uso.")
+            erros.append("Você precisa aceitar os termos de uso.")
 
         if captcha != "7":
-            erros.append("Resposta do captcha incorreta.")
+            erros.append("Resposta incorreta na pergunta de segurança.")
             self.set_erro_estilo(self.input_captcha)
 
         if erros:
