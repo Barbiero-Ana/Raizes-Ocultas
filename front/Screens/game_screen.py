@@ -27,14 +27,13 @@ class GameScreen(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # --- Background 
-        central_widget.setStyleSheet("""
-            QWidget {
-                background-image: url('assets/ScreenElements/gamescreen/background-game.png');
-                background-position: center;
-                background-size: cover;
-                background-color: #1a1a1a;
-            }
-        """)
+        self.background_label = QLabel(central_widget)
+        self.background_label.setPixmap(QPixmap("assets/ScreenElements/gamescreen/background-game.png"))
+        self.background_label.setScaledContents(True)
+        self.background_label.setGeometry(0, 0, 1000, 700)  
+        self.background_label.lower()  
+
+
 
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -53,7 +52,7 @@ class GameScreen(QMainWindow):
                 background-repeat: repeat;
                 color: #d9c27f;
                 font-weight: bold;
-                font-size: 20px;
+                font-size: 17px;
                 padding: 14px 10px;
                 border-radius: 14px;
                 border: 3px solid #7a6f44;
@@ -79,14 +78,24 @@ class GameScreen(QMainWindow):
         main_layout.addLayout(topo_layout)
 
         # --- Logo topo central ---
+        logo_layout = QHBoxLayout()
+        logo_layout.setContentsMargins(0, -100, 0, 0)
+        logo_layout.setSpacing(0)
+        logo_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)  
+
+        spacer_logo = QSpacerItem(370, -100, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        logo_layout.addItem(spacer_logo)
+
         self.logo_top = QLabel()
         pixmap_logo = QPixmap("assets/ScreenElements/gamescreen/logo-temp.png")
         if not pixmap_logo.isNull():
-            self.logo_top.setPixmap(pixmap_logo.scaledToWidth(200, Qt.TransformationMode.SmoothTransformation))
-        self.logo_top.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        main_layout.addWidget(self.logo_top)
+            self.logo_top.setPixmap(pixmap_logo.scaledToWidth(250, Qt.TransformationMode.SmoothTransformation))
+        self.logo_top.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        main_layout.addSpacerItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        logo_layout.addWidget(self.logo_top)
+        main_layout.addLayout(logo_layout)
+
+
 
         # --- Container dos botões ---
         botoes_container = QWidget()
