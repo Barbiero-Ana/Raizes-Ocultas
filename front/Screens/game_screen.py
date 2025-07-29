@@ -30,7 +30,6 @@ class GameScreen(QMainWindow):
         central_widget.setStyleSheet("""
             QWidget {
                 background-image: url('assets/ScreenElements/gamescreen/background-game.png');
-                background-repeat: no-repeat;
                 background-position: center;
                 background-size: cover;
                 background-color: #1a1a1a;
@@ -46,31 +45,34 @@ class GameScreen(QMainWindow):
         topo_layout = QHBoxLayout()
         topo_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.btn_voltar = QPushButton("← Voltar")
+        self.btn_voltar = QPushButton("Sair")
         self.btn_voltar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_voltar.setFixedSize(100, 40)
+        self.btn_voltar.setFixedSize(130, 50)  
         self.btn_voltar.setStyleSheet(f"""
             QPushButton {{
-                background-color: #4B3B8A;
-                color: #FFD700;
+                background-repeat: repeat;
+                color: #d9c27f;
                 font-weight: bold;
-                font-size: 14px;
-                border-radius: 8px;
-                border: 2px solid #6A52A3;
+                font-size: 20px;
+                padding: 14px 10px;
+                border-radius: 14px;
+                border: 3px solid #7a6f44;
                 font-family: "{self.fonte_medieval}";
+                qproperty-alignment: AlignCenter;
             }}
             QPushButton:hover {{
-                background-color: #5A4AA0;
-                border-color: #FFD700;
-                color: #FFFACD;
+                background-color: #556b2f88;
+                border-color: #f5e86c;
+                color: #fff8dc;
             }}
             QPushButton:pressed {{
-                background-color: #3E3278;
-                border-color: #B8860B;
-                color: #FFC107;
+                background-color: #3e4f1eaa;
+                border-color: #cfc28c;
+                color: #b9a75b;
             }}
         """)
         self.btn_voltar.clicked.connect(self.voltar_para_login)
+
 
         topo_layout.addWidget(self.btn_voltar, alignment=Qt.AlignmentFlag.AlignLeft)
         topo_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
@@ -137,14 +139,14 @@ class GameScreen(QMainWindow):
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(estilo_botao)
             btn.setFixedHeight(56)
-            btn.setMinimumWidth(300)  # largura mínima uniforme
+            btn.setMinimumWidth(300) 
             btn.setMaximumWidth(300)
             botao_layout.addWidget(btn)
 
             return botao_frame, btn
 
-        frame_novo, self.btn_novo_jogo = criar_botao_com_icone("Novo Jogo")
-        frame_carregar, self.btn_carregar_jogo = criar_botao_com_icone("Carregar Jogo")
+        frame_novo, self.btn_novo_jogo = criar_botao_com_icone("Nova Turma")
+        frame_carregar, self.btn_carregar_jogo = criar_botao_com_icone("Carregar Turma")
         frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatísticas")
 
         botoes_layout.addWidget(frame_novo)
@@ -167,7 +169,7 @@ class GameScreen(QMainWindow):
                 color: #d9c27f;
                 font-weight: bold;
                 font-size: 16px;
-                padding: 10px 20px;
+                padding: 10px 10px;
                 border-radius: 12px;
                 border: 2px solid #7a6f44;
                 font-family: "{self.fonte_medieval}";
