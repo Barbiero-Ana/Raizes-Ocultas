@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QCursor, QIcon
 from PyQt6.QtCore import Qt, QPropertyAnimation
 from game_screen import GameScreen 
-
+import random
 
 class HoverLabel(QLabel):
     def __init__(self, parent=None):
@@ -274,11 +274,39 @@ class TelaCadastro(QMainWindow):
 
         # Checkbox Termos
         self.checkbox_termos = QCheckBox("Li e aceito os Termos de Uso e Política de Privacidade.")
-        self.checkbox_termos.setStyleSheet("font-size: 13px; color: #444; margin-top: 8px; margin-bottom: 8px;")
+        self.checkbox_termos.setStyleSheet("""
+            QCheckBox {
+                font-size: 13px;
+                color: #444;
+                margin-top: 8px;
+                margin-bottom: 8px;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #444;
+                background-color: white;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #130060;
+                border: 2px solid #130060;
+            }
+            QCheckBox::indicator:unchecked {
+                background-color: white;
+            }
+        """)
         layout.addWidget(self.checkbox_termos)
 
+
+
+
+
         # Captcha
-        self.label_captcha = QLabel("Pergunta de segurança: Quanto é 3 + 4?")
+        self.num1 = random.randint(1, 10)
+        self.num2 = random.randint(1, 10)
+        self.resultado_captcha = self.num1 + self.num2
+
+        self.label_captcha = QLabel(f"Pergunta de segurança: Quanto é {self.num1} + {self.num2}?")
         self.label_captcha.setStyleSheet("font-size: 13px; color: #333;")
         layout.addWidget(self.label_captcha)
 
@@ -417,8 +445,8 @@ class TelaCadastro(QMainWindow):
         if not termos:
             erros.append("Você precisa aceitar os termos de uso.")
 
-        if captcha != "7":
-            erros.append("Resposta incorreta na pergunta de segurança.")
+        if captcha != str(self.resultado_captcha):
+            erros.append(f"Resposta incorreta. A resposta correta era {self.resultado_captcha}.")
             self.set_erro_estilo(self.input_captcha)
 
         if erros:
