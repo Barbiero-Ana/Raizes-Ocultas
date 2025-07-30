@@ -1,5 +1,12 @@
 # 🌱 Raízes Ocultas
 
+**__ENGLISH VERSION AT THE END — Read until the end to learn more about our project!__**
+
+![Cat with computer glasses](https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif)
+
+
+---
+
 🎮 **Raízes Ocultas** é uma aventura interativa e educativa que combina elementos de **RPG**, **quiz** e **jogos narrativos** para explorar e valorizar a **cultura mato-grossense**.  
 Desenvolvido com foco em experiências imersivas e aprendizagem lúdica, o jogo convida estudantes a embarcarem em uma jornada pelas riquezas culturais, históricas e ambientais de **Mato Grosso**.
 
@@ -13,8 +20,6 @@ A proposta visa não apenas divertir, mas **conscientizar**, **educar** e **resg
 ---
 
 ## 🎥 Prévia do Jogo
-
-Veja um pouco do que te espera:
 
 ![Gameplay Preview](https://raw.githubusercontent.com/Barbiero-Ana/Raizes-Ocultas/main/preview/Raizes-ocultas.gif)
 
