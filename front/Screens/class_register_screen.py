@@ -64,20 +64,20 @@ class ClassRegisterDialog(QDialog):
             layout.addWidget(label)
             layout.addWidget(widget)
 
-        # --- ID da turma ---
+
         self.id_label = QLabel("ID da Turma: 001")
         self.id_label.setStyleSheet("font-size: 14px; color: #333; font-weight: bold;")
         self.id_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.id_label)
 
-        # --- Nome da turma ---
+
         self.nome_turma_input = QLineEdit()
         self.nome_turma_input.setPlaceholderText("Digite o nome da turma")
         self.nome_turma_input.setFixedSize(360, 40)
         self.nome_turma_input.setStyleSheet(estilo_input)
         add_input("Nome da Turma:", self.nome_turma_input)
 
-        # --- Qtd alunos ---
+        # --- qtd alunos 
         self.combo_qtd_alunos = QComboBox()
         self.combo_qtd_alunos.addItems([str(i) for i in range(10, 51)])
         self.combo_qtd_alunos.setFixedSize(360, 40)
