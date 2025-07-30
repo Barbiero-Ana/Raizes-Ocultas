@@ -56,6 +56,8 @@ class Database:
                     id_turma INTEGER PRIMARY KEY AUTOINCREMENT,
                     nome_turma TEXT NOT NULL,
                     vida_max INTEGER NOT NULL,
+                    quantidade_turma INTEGER NOT NULL,
+                    serie TEXT NOT NULL,
                     vida_atual INTEGER NOT NULL,
                     pontos_acerto INTEGER NOT NULL,
                     pontos_erro INTEGER NOT NULL,
