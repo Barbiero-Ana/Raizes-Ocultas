@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt, QOperatingSystemVersion, QSysInfo
-from class_register_screen import ClassRegisterScreen
+from class_register_screen import ClassRegisterDialog
 
 
 class GameScreen(QMainWindow):
@@ -93,11 +93,11 @@ class GameScreen(QMainWindow):
 
         # --- logo 
         logo_layout = QHBoxLayout()
-        logo_layout.setContentsMargins(0, -100, 0, 0)
+        logo_layout.setContentsMargins(0, 0, 0, 0)
         logo_layout.setSpacing(0)
         logo_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)  
 
-        spacer_logo = QSpacerItem(370, -100, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        spacer_logo = QSpacerItem(370, -200, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
         logo_layout.addItem(spacer_logo)
 
         self.logo_top = QLabel()
@@ -108,6 +108,7 @@ class GameScreen(QMainWindow):
 
         logo_layout.addWidget(self.logo_top)
         main_layout.addLayout(logo_layout)
+        
 
         # --- container dos botões ---
         botoes_container = QWidget()
@@ -231,8 +232,9 @@ class GameScreen(QMainWindow):
         self.btn_novo_jogo.clicked.connect(self.abrir_tela_criar_turma)
 
     def abrir_tela_criar_turma(self):
-        self.class_register_screen = ClassRegisterScreen(self.show)
-        self.class_register_screen.show()
+        self.class_register_screen = ClassRegisterDialog(self)
+        self.class_register_screen.exec()
+
 
     def adjust_button_font(self, button):
         screen_width = self.width()

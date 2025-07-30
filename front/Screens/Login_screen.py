@@ -71,7 +71,11 @@ class TelaLogin(QMainWindow):
         layout.addWidget(self.logo)
         layout.addSpacing(40)
 
-        # Email
+        # --- Email ---
+        label_email = QLabel("E-mail")
+        label_email.setStyleSheet("font-size: 13px; color: #333; font-weight: bold;")
+        layout.addWidget(label_email, alignment=Qt.AlignmentFlag.AlignLeft)
+
         self.input_email = QLineEdit()
         self.input_email.setPlaceholderText("E-mail")
         self.input_email.setFixedSize(300, 40)
@@ -87,9 +91,13 @@ class TelaLogin(QMainWindow):
         """)
         icone_email = QIcon(QPixmap("assets/ScreenElements/icons/mail_vector.png").scaled(24, 24, Qt.AspectRatioMode.KeepAspectRatio))
         self.input_email.addAction(icone_email, QLineEdit.ActionPosition.LeadingPosition)
-        layout.addWidget(self.input_email, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.input_email, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # Senha
+        # --- Senha ---
+        label_senha = QLabel("Senha")
+        label_senha.setStyleSheet("font-size: 13px; color: #333; font-weight: bold;")
+        layout.addWidget(label_senha, alignment=Qt.AlignmentFlag.AlignLeft)
+
         self.input_senha = QLineEdit()
         self.input_senha.setPlaceholderText("Senha")
         self.input_senha.setEchoMode(QLineEdit.EchoMode.Password)
@@ -106,7 +114,8 @@ class TelaLogin(QMainWindow):
         """)
         icone_senha = QIcon(QPixmap("assets/ScreenElements/icons/password_vector.png").scaled(24, 24, Qt.AspectRatioMode.KeepAspectRatio))
         self.input_senha.addAction(icone_senha, QLineEdit.ActionPosition.LeadingPosition)
-        layout.addWidget(self.input_senha, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.input_senha, alignment=Qt.AlignmentFlag.AlignLeft)
+
 
 
         # Botão acessar
