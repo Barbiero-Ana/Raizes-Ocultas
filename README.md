@@ -19,7 +19,7 @@ A proposta visa não apenas divertir, mas **conscientizar**, **educar** e **resg
 
 ---
 
-## 🎥 Prévia do Jogo
+## 🎥 Prévia do desenvolvimento
 
 ![Gameplay Preview](https://raw.githubusercontent.com/Barbiero-Ana/Raizes-Ocultas/main/preview/Raizes-ocultas.gif)
 
@@ -84,7 +84,7 @@ The project is designed to **entertain**, **educate**, and **raise awareness**, 
 
 ---
 
-## 🎥 Game Preview
+## 🎥 Development progress
 
 ![Gameplay Preview](https://raw.githubusercontent.com/Barbiero-Ana/Raizes-Ocultas/main/preview/Raizes-ocultas.gif)
 
