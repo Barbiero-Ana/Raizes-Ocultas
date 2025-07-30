@@ -16,7 +16,7 @@ A proposta visa não apenas divertir, mas **conscientizar**, **educar** e **resg
 
 Veja um pouco do que te espera:
 
-![Preview do jogo](preview/Raizes-ocultas.gif)
+![Gameplay Preview](preview/Raizes-ocultas.gif)
 
 
 ---
