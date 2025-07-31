@@ -1,18 +1,17 @@
-from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, QListWidgetItem, 
-                            QLineEdit, QRadioButton, QCheckBox, QComboBox, QDateEdit)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QDate
-from PyQt6 import uic
+from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, )
 from database.criar_banco import Database, Funcoes_DataBase
 import sys
 from validador import Validador
 import requests
 import sqlite3
 import hashlib
+from front.Screens.Login_screen import TelaLogin
+
+# Pensar nos módulos como seres mais independentes
 
 class Login:
     def __init__(self):
-        # Removido o super().__init__() pois não há herança
-        self.db = Funcoes_DataBase("Raizes_Ocultas.db")  # Usando Funcoes_DataBase corretamente
+        self.db = Funcoes_DataBase("Raizes_Ocultas.db")
     
     def verificar_credenciais(self, email: str, senha: str) -> tuple:
         """
@@ -25,7 +24,7 @@ class Login:
         Returns:
             tuple: (sucesso: bool, mensagem: str, id_usuario: int)
         """
-        conn = self.db.db.conectar_no_banco()  # Acessando a conexão através do db interno
+        conn = self.db.db.conectar_no_banco()
         if conn is None:
             return False, "Erro ao conectar ao banco", None
             
@@ -41,13 +40,21 @@ class Login:
                     SELECT id_usuario, cripto_senha, deletado 
                     FROM Usuario 
                     WHERE email = ?
-                """, (email))
+                """, (email,))  # Corrigido: adicionada vírgula para criar tupla
                 
                 usuario = cursor.fetchone()
                 
-                if not usuario:
-                    return False, "Email não cadastrado", None
-                    
+                if not usuario:    
+                    resposta = QMessageBox.question(
+                        self,
+                        "E-mail não cadastrado",
+                        "E-mail não encontrado. Deseja se cadastrar ?",
+                        QMessageBox.standardButton.YES | QMessageBox.standardButton.No
+                    )
+                    if resposta == QMessageBox.standardButton.Yes:
+                        TelaLogin.abrir_tela_cadastro()
+                
+                                 
                 id_usuario, hash_armazenado, deletado = usuario
                 
                 if deletado:
@@ -85,4 +92,38 @@ class Login:
             return False, msg, None
             
         # Verifica credenciais no banco
-        return self.verificar_credenciais(email, senha)  # Corrigido para chamar verificar_credenciais
+        return self.verificar_credenciais(email, senha)
+    
+
+    # Adicione este novo método à classe TelaLogin:
+    def validar_e_abrir_jogo(self):
+        """Valida as credenciais antes de abrir o jogo"""
+        email = self.input_email.text().strip()
+        senha = self.input_senha.text().strip()
+        
+        # Cria instância do sistema de login, passando self como parent_window
+        login_system = Login(parent_window=self)
+        
+        # Valida as credenciais
+        sucesso, mensagem, id_usuario = login_system.realizar_login(email, senha)
+        
+        if sucesso:
+            # Salva o ID do usuário se necessário
+            self.id_usuario = id_usuario
+            
+            # Se as credenciais estiverem corretas, abre o jogo
+            self.abrir_game_animacao()
+        else:
+            # Mostra mensagem de erro
+            QMessageBox.warning(self, "Acesso Negado", mensagem)
+            
+            # Opcional: oferecer cadastro se o email não existir
+            if "não cadastrado" in mensagem:
+                resposta = QMessageBox.question(
+                    self,
+                    "Cadastro",
+                    "Deseja criar uma nova conta?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if resposta == QMessageBox.StandardButton.Yes:
+                    self.abrir_tela_cadastro()

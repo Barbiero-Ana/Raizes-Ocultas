@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt, QOperatingSystemVersion, QSysInfo
-from class_register_screen import ClassRegisterDialog
+from front.Screens.class_register_screen import ClassRegisterDialog
 
 
 class GameScreen(QMainWindow):

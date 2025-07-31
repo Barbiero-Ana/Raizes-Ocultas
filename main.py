@@ -1,12 +1,12 @@
 import sys
 import re
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QPushButton,
+    QApplication, QMainWindow, QLabel, QPushButton,QMessageBox,
     QLineEdit, QCheckBox, QWidget, QVBoxLayout, QStackedWidget, QGraphicsOpacityEffect,
 )
 from PyQt6.QtGui import QPixmap, QCursor, QIcon
 from PyQt6.QtCore import Qt, QPropertyAnimation
-from game_screen import GameScreen 
+from front.Screens.game_screen import GameScreen 
 import random
 from backend.login import Login
 
@@ -122,6 +122,7 @@ class TelaLogin(QMainWindow):
 
 
         # Botão acessar
+        # No método __init__ da classe TelaLogin:
         self.botao_acessar = QPushButton("Acessar")
         self.botao_acessar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.botao_acessar.setFixedHeight(40)
@@ -133,8 +134,41 @@ class TelaLogin(QMainWindow):
             border-radius: 5px;
         """)
         layout.addWidget(self.botao_acessar)
-        self.botao_acessar.clicked.connect(Login.validar_e_abrir_jogo)
+        self.botao_acessar.clicked.connect(self.validar_e_abrir_jogo)  # Conecta à nova função
 
+# Adicione este novo método à classe TelaLogin:
+    def validar_e_abrir_jogo(self):
+        """Valida as credenciais antes de abrir o jogo"""
+        email = self.input_email.text().strip()
+        senha = self.input_senha.text().strip()
+        
+        # Cria instância do sistema de login, passando self como parent_window
+        login_system = Login(parent_window=self)
+        
+        # Valida as credenciais
+        sucesso, mensagem, id_usuario = login_system.realizar_login(email, senha)
+        
+        if sucesso:
+            # Salva o ID do usuário se necessário
+            self.id_usuario = id_usuario
+            
+            # Se as credenciais estiverem corretas, abre o jogo
+            self.abrir_game_animacao()
+        else:
+            # Mostra mensagem de erro
+            QMessageBox.warning(self, "Acesso Negado", mensagem)
+            
+            # Opcional: oferecer cadastro se o email não existir
+            if "não cadastrado" in mensagem:
+                resposta = QMessageBox.question(
+                    self,
+                    "Cadastro",
+                    "Deseja criar uma nova conta?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if resposta == QMessageBox.StandardButton.Yes:
+                    self.abrir_tela_cadastro()
+              
         # Label para registro
         self.label_registro = HoverLabel()
         self.label_registro.setAlignment(Qt.AlignmentFlag.AlignHCenter)
