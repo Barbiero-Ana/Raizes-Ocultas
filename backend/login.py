@@ -41,7 +41,7 @@ class Login:
                     SELECT id_usuario, cripto_senha, deletado 
                     FROM Usuario 
                     WHERE email = ?
-                """, (email,))
+                """, (email))
                 
                 usuario = cursor.fetchone()
                 

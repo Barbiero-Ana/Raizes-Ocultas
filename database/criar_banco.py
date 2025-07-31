@@ -240,8 +240,36 @@ class Funcoes_DataBase:
         finally:
             self.fechar_conexao()
 
+class Logica_Login:
+        def validar_usuario(self, email, password_hash):
+            conn = self.get_connection()
+            try:
+                with conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT * FROM usuarios 
+                        WHERE email = ? AND password = ?
+                    """, (email, password_hash))
+                    return cursor.fetchone()
+            except Error as e:
+                print(f"Erro ao validar usuário: {e}")
+                return None
+        
+        def obter_cliente_por_email(self,email):
+            conn = self.get_connection()
+            try:
+                with conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM Usuarios WHERE email = ?",(email))
+                    return cursor.fetchone()
+            except Error as e:
+                print(f"Erro ao obter usuario por E-mail: {e}")
+                raise
+            finally:
+                self.close_connection()
+
 if __name__ == "__main__":
-    nome_banco = "rpg_game.db"
+    nome_banco = "raizes_ocultas.db"
     db = Database(nome_banco)
     sucesso = db.criar_tabelas()
 
@@ -252,3 +280,5 @@ if __name__ == "__main__":
         funcoes.inserir_perguntas_padrao()
     else:
         print("Erro ao criar tabelas.")
+
+
