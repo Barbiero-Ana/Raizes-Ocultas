@@ -39,7 +39,7 @@ class Database:
         try:
             with conn:
                 cursor = conn.cursor()
-
+                #-----------------Tabela do Professor ---------------------------
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Usuario(
                     id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,14 +50,13 @@ class Database:
                     data_delecao TEXT
                 )
                 """)
-
+                #------------------- Tabela da Turma ------------------
+                # A turma vai ser como um personagem, vai salvar a vida e o progresso
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Turma(
                     id_turma INTEGER PRIMARY KEY AUTOINCREMENT,
                     nome_turma TEXT NOT NULL,
                     vida_max INTEGER NOT NULL,
-                    quantidade_turma INTEGER NOT NULL,
-                    serie TEXT NOT NULL,
                     vida_atual INTEGER NOT NULL,
                     pontos_acerto INTEGER NOT NULL,
                     pontos_erro INTEGER NOT NULL,
@@ -66,7 +65,7 @@ class Database:
                     FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario) ON DELETE CASCADE
                 )
                 """)
-
+                #----------------- Tabela Inimigos --------------------------
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Inimigos(
                     id_inimigo INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,6 +77,7 @@ class Database:
                     vivo BOOLEAN DEFAULT 0
                 )
                 """)
+                #-------------------- Tabela dos Boss ------------------------
                 ##3 - Comida 4 - arte - 5 cultura 
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Boss(
@@ -89,9 +89,9 @@ class Database:
                     aparencia_boss TEXT NOT NULL
                 )
                 """)
-
+                #------------- Tabela pra salvar o progresso das Turmas-------
                 cursor.execute("""
-                CREATE TABLE IF NOT EXISTS dados_do_jogador(
+                CREATE TABLE IF NOT EXISTS Dados_do_jogador(
                     id_progresso INTEGER PRIMARY KEY AUTOINCREMENT,
                     id_turma INTEGER NOT NULL,
                     id_boss INTEGER NOT NULL,
@@ -100,9 +100,9 @@ class Database:
                     FOREIGN KEY (id_boss) REFERENCES Boss(id_boss) ON DELETE CASCADE
                 )
                 """)
-
+                #------------ Tabela para salvar as questões -----------------
                 cursor.execute("""
-                CREATE TABLE IF NOT EXISTS perguntas(
+                CREATE TABLE IF NOT EXISTS Perguntas(
                     id_pergunta INTEGER PRIMARY KEY AUTOINCREMENT,
                     pergunta TEXT NOT NULL,
                     classe_pergunta INTEGER NOT NULL CHECK(classe_pergunta IN (3, 4, 5)),
@@ -114,13 +114,27 @@ class Database:
                     resposta TEXT NOT NULL CHECK(resposta IN ('A','B','C','D'))
                 )
                 """)
-
+                #---------------- Tabela das Respostas das Turmas ---------------
+                # Essa tabela é pra gente pode analisar o tempo que é usado por resposta e quantidade de 
+                # Timeout que tivemos por questão.
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS Time_Respostas(
+                    id_tempo_reposta INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    id_usuario INTEGER NOT NULL, 
+                    id_pergunta INTEGER NOT NULL,
+                    tempo resposta INTERVAL NOT NULL, 
+                    time_out BOOLEAN DEFAULT 0,
+                    FOREING KEY(id_usuario) REFRENCE Usuario(id_usuario) ON DELETE CASCADE    
+                )
+                """)
+                
             return True
         except Error as e:
             print(f"Erro ao criar tabelas: {e}")
             return False
 
 
+#VIEW não é uma tabela no banco ela é como uma 
 
 class Funcoes_DataBase:
     def __init__(self, db_name):
@@ -143,7 +157,6 @@ class Funcoes_DataBase:
                     turma.nome_turma,
                     turma.vida_max,
                     turma.vida_atual,
-                    turma.experiencia,
                     1 if getattr(turma, 'vivo', True) else 0,
                     turma.id_usuario
                 )
