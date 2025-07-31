@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QCursor, QIcon
 from PyQt6.QtCore import Qt, QPropertyAnimation
 from game_screen import GameScreen 
-
+import random
 
 class HoverLabel(QLabel):
     def __init__(self, parent=None):
@@ -71,7 +71,11 @@ class TelaLogin(QMainWindow):
         layout.addWidget(self.logo)
         layout.addSpacing(40)
 
-        # Email
+        # --- Email ---
+        label_email = QLabel("E-mail")
+        label_email.setStyleSheet("font-size: 13px; color: #333; font-weight: bold;")
+        layout.addWidget(label_email, alignment=Qt.AlignmentFlag.AlignLeft)
+
         self.input_email = QLineEdit()
         self.input_email.setPlaceholderText("E-mail")
         self.input_email.setFixedSize(300, 40)
@@ -87,9 +91,13 @@ class TelaLogin(QMainWindow):
         """)
         icone_email = QIcon(QPixmap("assets/ScreenElements/icons/mail_vector.png").scaled(24, 24, Qt.AspectRatioMode.KeepAspectRatio))
         self.input_email.addAction(icone_email, QLineEdit.ActionPosition.LeadingPosition)
-        layout.addWidget(self.input_email, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.input_email, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # Senha
+        # --- Senha ---
+        label_senha = QLabel("Senha")
+        label_senha.setStyleSheet("font-size: 13px; color: #333; font-weight: bold;")
+        layout.addWidget(label_senha, alignment=Qt.AlignmentFlag.AlignLeft)
+
         self.input_senha = QLineEdit()
         self.input_senha.setPlaceholderText("Senha")
         self.input_senha.setEchoMode(QLineEdit.EchoMode.Password)
@@ -106,7 +114,8 @@ class TelaLogin(QMainWindow):
         """)
         icone_senha = QIcon(QPixmap("assets/ScreenElements/icons/password_vector.png").scaled(24, 24, Qt.AspectRatioMode.KeepAspectRatio))
         self.input_senha.addAction(icone_senha, QLineEdit.ActionPosition.LeadingPosition)
-        layout.addWidget(self.input_senha, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.input_senha, alignment=Qt.AlignmentFlag.AlignLeft)
+
 
 
         # Botão acessar
@@ -274,11 +283,54 @@ class TelaCadastro(QMainWindow):
 
         # Checkbox Termos
         self.checkbox_termos = QCheckBox("Li e aceito os Termos de Uso e Política de Privacidade.")
-        self.checkbox_termos.setStyleSheet("font-size: 13px; color: #444; margin-top: 8px; margin-bottom: 8px;")
+        self.checkbox_termos.setStyleSheet("""
+            QCheckBox {
+                font-size: 13px;
+                color: #444;
+                margin-top: 8px;
+                margin-bottom: 8px;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #130060;
+                border-radius: 4px;
+                background-color: #fff;
+                image: url('assets/ScreenElements/checked-icon.png');
+                text-align: center;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #130060;
+                border: 2px solid #130060;
+                image: url('assets/ScreenElements/checked-icon.png');
+            }
+            QCheckBox::indicator:unchecked {
+                background-color: #fff;
+                border: 2px solid #130060;
+                image: url('assets/ScreenElements/unchecked-icon.png');
+            }
+            QCheckBox:hover {
+                color: #130060;
+            }
+        """)
+
         layout.addWidget(self.checkbox_termos)
 
+
+
+
+
+
+
+
+
+
         # Captcha
-        self.label_captcha = QLabel("Pergunta de segurança: Quanto é 3 + 4?")
+        self.num1 = random.randint(1, 10)
+        self.num2 = random.randint(1, 10)
+        self.resultado_captcha = self.num1 + self.num2
+
+        self.label_captcha = QLabel(f"Pergunta de segurança: Quanto é {self.num1} + {self.num2}?")
         self.label_captcha.setStyleSheet("font-size: 13px; color: #333;")
         layout.addWidget(self.label_captcha)
 
@@ -417,8 +469,8 @@ class TelaCadastro(QMainWindow):
         if not termos:
             erros.append("Você precisa aceitar os termos de uso.")
 
-        if captcha != "7":
-            erros.append("Resposta incorreta na pergunta de segurança.")
+        if captcha != str(self.resultado_captcha):
+            erros.append(f"Resposta incorreta. A resposta correta era {self.resultado_captcha}.")
             self.set_erro_estilo(self.input_captcha)
 
         if erros:
