@@ -22,9 +22,9 @@ class GameScreen(QMainWindow):
         self.setFixedSize(1000, 700)
 
         # --- Fonte
-        # Caminho da fonte
+
         font_path = "assets/fonts/DUNGRG_.TTF"
-        font_path = font_path.replace("\\", "/")  # Corrige as barras invertidas
+        font_path = font_path.replace("\\", "/")  
         abs_font_path = os.path.abspath(font_path)
 
         if os.path.exists(abs_font_path):
@@ -50,7 +50,6 @@ class GameScreen(QMainWindow):
         # --- Background 
         self.background_label = QLabel(central_widget)
         
-        # Tentar carregar o background, se não existir usar cor sólida
         background_path = "assets/ScreenElements/gamescreen/background-game.png"
         if os.path.exists(background_path):
             self.background_label.setPixmap(QPixmap(background_path))
@@ -120,7 +119,7 @@ class GameScreen(QMainWindow):
             if not pixmap_logo.isNull():
                 self.logo_top.setPixmap(pixmap_logo.scaledToWidth(250, Qt.TransformationMode.SmoothTransformation))
         else:
-            # Se não encontrar a logo, usar texto
+            # caso a logo suma dessa budega
             self.logo_top.setText("🎮 RAÍZES OCULTAS 🎮")
             self.logo_top.setStyleSheet(f"""
                 font-size: 28px; 
@@ -139,7 +138,7 @@ class GameScreen(QMainWindow):
         botoes_layout.setSpacing(25)
         botoes_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        # Estilo dos botões - versão mais compatível
+        # Estilo dos botões
         estilo_botao = f"""
             QPushButton {{
                 background-color: #8B4513;
@@ -179,7 +178,7 @@ class GameScreen(QMainWindow):
                 pixmap_icone = QPixmap(icone_path).scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 lbl_icone.setPixmap(pixmap_icone)
             else:
-                # Se não encontrar o ícone, usar texto emoji
+                
                 lbl_icone.setText("⚡")
                 lbl_icone.setStyleSheet("font-size: 24px; color: #f5e9c3;")
             
@@ -192,7 +191,7 @@ class GameScreen(QMainWindow):
             btn.setFixedHeight(56)
             btn.setMinimumWidth(300) 
             btn.setMaximumWidth(300)
-            self.adjust_button_font(btn)  # Ajustar a fonte dinamicamente
+            self.adjust_button_font(btn)  
             botao_layout.addWidget(btn)
 
             return botao_frame, btn
