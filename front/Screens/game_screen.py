@@ -3,9 +3,15 @@ from PyQt6.QtWidgets import (
     QSpacerItem, QSizePolicy, QFrame
 )
 from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
-from PyQt6.QtCore import Qt, QOperatingSystemVersion, QSysInfo
-from front.Screens.class_register_screen import ClassRegisterDialog
+from PyQt6.QtCore import Qt
+import os
 
+# Import condicional para evitar erros
+try:
+    from class_register_screen import ClassRegisterDialog
+except ImportError:
+    print("⚠️  class_register_screen não encontrado - funcionalidade limitada")
+    ClassRegisterDialog = None
 
 class GameScreen(QMainWindow):
     def __init__(self, tela_login=None):
@@ -16,11 +22,9 @@ class GameScreen(QMainWindow):
         self.setFixedSize(1000, 700)
 
         # --- Fonte
-        import os
 
-        # Caminho da fonte
         font_path = "assets/fonts/DUNGRG_.TTF"
-        font_path = font_path.replace("\\", "/")  # Corrige as barras invertidas
+        font_path = font_path.replace("\\", "/")  
         abs_font_path = os.path.abspath(font_path)
 
         if os.path.exists(abs_font_path):
@@ -45,8 +49,15 @@ class GameScreen(QMainWindow):
 
         # --- Background 
         self.background_label = QLabel(central_widget)
-        self.background_label.setPixmap(QPixmap("assets/ScreenElements/gamescreen/background-game.png"))
-        self.background_label.setScaledContents(True)
+        
+        background_path = "assets/ScreenElements/gamescreen/background-game.png"
+        if os.path.exists(background_path):
+            self.background_label.setPixmap(QPixmap(background_path))
+            self.background_label.setScaledContents(True)
+        else:
+            print(f"⚠️  Background não encontrado: {background_path}")
+            self.background_label.setStyleSheet("background-color: #2c3e50;")
+        
         self.background_label.setGeometry(0, 0, 1000, 700)  
         self.background_label.lower()  
 
@@ -101,43 +112,53 @@ class GameScreen(QMainWindow):
         logo_layout.addItem(spacer_logo)
 
         self.logo_top = QLabel()
-        pixmap_logo = QPixmap("assets/ScreenElements/gamescreen/logo-temp.png")
-        if not pixmap_logo.isNull():
-            self.logo_top.setPixmap(pixmap_logo.scaledToWidth(250, Qt.TransformationMode.SmoothTransformation))
+        logo_path = "assets/ScreenElements/gamescreen/logo-temp.png"
+        
+        if os.path.exists(logo_path):
+            pixmap_logo = QPixmap(logo_path)
+            if not pixmap_logo.isNull():
+                self.logo_top.setPixmap(pixmap_logo.scaledToWidth(250, Qt.TransformationMode.SmoothTransformation))
+        else:
+            # caso a logo suma dessa budega
+            self.logo_top.setText("🎮 RAÍZES OCULTAS 🎮")
+            self.logo_top.setStyleSheet(f"""
+                font-size: 28px; 
+                font-weight: bold; 
+                color: #f5e9c3;
+                font-family: '{self.fonte_medieval}';
+            """)
+        
         self.logo_top.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
         logo_layout.addWidget(self.logo_top)
         main_layout.addLayout(logo_layout)
         
-
         # --- container dos botões ---
         botoes_container = QWidget()
         botoes_layout = QVBoxLayout(botoes_container)
         botoes_layout.setSpacing(25)
         botoes_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
+        # Estilo dos botões
         estilo_botao = f"""
             QPushButton {{
-                background-repeat: repeat;
-                color: #d9c27f;
+                background-color: #8B4513;
+                color: #f5e9c3;
                 font-weight: bold;
                 font-size: 20px;
                 padding: 14px 60px;
-                border-radius: 14px;
-                border: 3px solid #7a6f44;
+                border-radius: 18px;
+                border: 3px solid #5a452b;
                 font-family: "{self.fonte_medieval}";
-                qproperty-alignment: AlignCenter;
             }}
             QPushButton:hover {{
-                background-color: #556b2f88;
-                border-color: #f5e86c;
+                border: 3px solid #f2d372;
                 color: #fff8dc;
-                box-shadow: 0 0 15px #f5e86c;
+                background-color: #A0522D;
             }}
             QPushButton:pressed {{
-                background-color: #3e4f1eaa;
-                border-color: #cfc28c;
-                color: #b9a75b;
+                border: 3px solid #d4b95a;
+                color: #bba56e;
+                background-color: #654321;
             }}
         """
 
@@ -151,8 +172,16 @@ class GameScreen(QMainWindow):
             botao_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
             lbl_icone = QLabel()
-            pixmap_icone = QPixmap("assets/ScreenElements/icons/runa.png").scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            lbl_icone.setPixmap(pixmap_icone)
+            icone_path = "assets/ScreenElements/icons/runa.png"
+            
+            if os.path.exists(icone_path):
+                pixmap_icone = QPixmap(icone_path).scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                lbl_icone.setPixmap(pixmap_icone)
+            else:
+                
+                lbl_icone.setText("⚡")
+                lbl_icone.setStyleSheet("font-size: 24px; color: #f5e9c3;")
+            
             lbl_icone.setFixedSize(36, 36)
             botao_layout.addWidget(lbl_icone)
 
@@ -162,14 +191,14 @@ class GameScreen(QMainWindow):
             btn.setFixedHeight(56)
             btn.setMinimumWidth(300) 
             btn.setMaximumWidth(300)
-            self.adjust_button_font(btn)  # Ajustar a fonte dinamicamente
+            self.adjust_button_font(btn)  
             botao_layout.addWidget(btn)
 
             return botao_frame, btn
 
         frame_novo, self.btn_novo_jogo = criar_botao_com_icone("Nova Turma")
         frame_carregar, self.btn_carregar_jogo = criar_botao_com_icone("Carregar Turma")
-        frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatisticas")
+        frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatísticas")
 
         botoes_layout.addWidget(frame_novo)
         botoes_layout.addWidget(frame_carregar)
@@ -187,7 +216,7 @@ class GameScreen(QMainWindow):
 
         estilo_botao_pequeno = f"""
             QPushButton {{
-                background-repeat: repeat;
+                background-color: #654321;
                 color: #d9c27f;
                 font-weight: bold;
                 font-size: 15px;
@@ -195,16 +224,14 @@ class GameScreen(QMainWindow):
                 border-radius: 12px;
                 border: 2px solid #7a6f44;
                 font-family: "{self.fonte_medieval}";
-                qproperty-alignment: AlignCenter;
             }}
             QPushButton:hover {{
-                background-color: #556b2f88;
+                background-color: #8B4513;
                 border-color: #f5e86c;
                 color: #fff8dc;
-                box-shadow: 0 0 12px #f5e86c;
             }}
             QPushButton:pressed {{
-                background-color: #3e4f1eaa;
+                background-color: #5D4037;
                 border-color: #cfc28c;
                 color: #b9a75b;
             }}
@@ -229,27 +256,58 @@ class GameScreen(QMainWindow):
         botoes_inferiores.setFixedHeight(50)
         botoes_inferiores.move(self.width() - botoes_inferiores.width() - 20, self.height() - botoes_inferiores.height() - 20)
         botoes_inferiores.show()
+        
+        # Conectar eventos dos botões
         self.btn_novo_jogo.clicked.connect(self.abrir_tela_criar_turma)
+        self.btn_carregar_jogo.clicked.connect(self.carregar_turma)
+        self.btn_estatisticas.clicked.connect(self.mostrar_estatisticas)
+        self.btn_equipe.clicked.connect(self.mostrar_equipe)
+        self.btn_projeto.clicked.connect(self.mostrar_projeto)
 
     def abrir_tela_criar_turma(self):
-        self.class_register_screen = ClassRegisterDialog(self)
-        self.class_register_screen.exec()
+        """Abre a tela de criação de turma"""
+        if ClassRegisterDialog:
+            self.class_register_screen = ClassRegisterDialog(self)
+            self.class_register_screen.exec()
+        else:
+            print("⚠️  Funcionalidade de criar turma não disponível")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Info", "Funcionalidade em desenvolvimento!")
 
+    def carregar_turma(self):
+        """Carrega uma turma existente"""
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.information(self, "Carregar Turma", "Funcionalidade em desenvolvimento!")
+
+    def mostrar_estatisticas(self):
+        """Mostra as estatísticas"""
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.information(self, "Estatísticas", "Funcionalidade em desenvolvimento!")
+
+    def mostrar_equipe(self):
+        """Mostra informações da equipe"""
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.information(self, "Equipe", "Desenvolvido pela equipe Raízes Ocultas!")
+
+    def mostrar_projeto(self):
+        """Mostra informações do projeto"""
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.information(self, "Projeto", "Jogo educativo Raízes Ocultas\nVersão 1.0")
 
     def adjust_button_font(self, button):
+        """Ajusta o tamanho da fonte dos botões"""
         screen_width = self.width()
-        screen_height = self.height()
 
         if button == self.btn_voltar:
-            font_size = int(screen_width * 0.015)  # Um valor menor para o botão "Sair"
+            font_size = int(screen_width * 0.015)
         else:
-            font_size = int(screen_width * 0.02)  # Para os outros botões
+            font_size = int(screen_width * 0.02)  
 
         font = QFont(self.fonte_medieval, font_size)
         button.setFont(font)
 
-
     def voltar_para_login(self):
+        """Volta para a tela de login"""
         self.close()
         if self.tela_login:
             self.tela_login.show()
