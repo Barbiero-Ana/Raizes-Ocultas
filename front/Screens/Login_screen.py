@@ -1,16 +1,16 @@
 import sys
 import re
+import os
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QPushButton,
-    QLineEdit, QCheckBox, QWidget, QVBoxLayout, QStackedWidget, QGraphicsOpacityEffect,
+    QApplication, QMainWindow, QLabel, QPushButton, QMessageBox,
+    QLineEdit, QCheckBox, QWidget, QVBoxLayout, QGraphicsOpacityEffect,
 )
 from PyQt6.QtGui import QPixmap, QCursor, QIcon
 from PyQt6.QtCore import Qt, QPropertyAnimation
-from game_screen import GameScreen 
 import random
-from backend.login import Login
 
-
+# Import das telas
+from game_screen import GameScreen
 
 class HoverLabel(QLabel):
     def __init__(self, parent=None):
@@ -49,14 +49,13 @@ class HoverLabel(QLabel):
 
 # ---------------------------------- login ---------------
 
-
 class TelaLogin(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Raízes Ocultas - Login")
         self.setFixedSize(1000, 700)
         self.setStyleSheet("background-color: white;")
-        
+        self.id_usuario = None  # Para armazenar o ID do usuário logado
 
         # Container central
         central_widget = QWidget()
@@ -119,8 +118,6 @@ class TelaLogin(QMainWindow):
         self.input_senha.addAction(icone_senha, QLineEdit.ActionPosition.LeadingPosition)
         layout.addWidget(self.input_senha, alignment=Qt.AlignmentFlag.AlignLeft)
 
-
-
         # Botão acessar
         self.botao_acessar = QPushButton("Acessar")
         self.botao_acessar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -133,7 +130,14 @@ class TelaLogin(QMainWindow):
             border-radius: 5px;
         """)
         layout.addWidget(self.botao_acessar)
-        self.botao_acessar.clicked.connect(Login.validar_e_abrir_jogo)
+        self.botao_acessar.clicked.connect(self.validar_e_abrir_jogo)
+
+        # Label para mensagens de erro
+        self.label_mensagem = QLabel("")
+        self.label_mensagem.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.label_mensagem.setStyleSheet("color: red; font-size: 12px; margin-top: 10px;")
+        self.label_mensagem.setWordWrap(True)
+        layout.addWidget(self.label_mensagem)
 
         # Label para registro
         self.label_registro = HoverLabel()
@@ -142,8 +146,61 @@ class TelaLogin(QMainWindow):
         layout.addWidget(self.label_registro)
 
         self.dec_imagens()
-        self.botao_acessar.clicked.connect(self.abrir_game_animacao)
 
+    def validar_e_abrir_jogo(self):
+        """Valida as credenciais antes de abrir o jogo"""
+        email = self.input_email.text().strip()
+        senha = self.input_senha.text().strip()
+        
+        # Limpar mensagens anteriores
+        self.label_mensagem.setText("")
+        
+        # Validações básicas
+        if not email:
+            self.label_mensagem.setText("Por favor, digite seu e-mail.")
+            return
+        
+        if not senha:
+            self.label_mensagem.setText("Por favor, digite sua senha.")
+            return
+        
+        # Validar credenciais usando o backend
+        try:
+            # Adicionar o caminho do backend
+            sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+            from backend.login import Login
+            
+            # Criar instância do sistema de login
+            login_system = Login()
+            
+            # Validar as credenciais
+            sucesso, mensagem, id_usuario = login_system.realizar_login(email, senha)
+            
+            if sucesso:
+                # Salvar o ID do usuário
+                self.id_usuario = id_usuario
+                print(f"Login bem-sucedido! ID do usuário: {id_usuario}")
+                
+                # Abrir o jogo com animação
+                self.abrir_game_animacao()
+            else:
+                # Mostrar mensagem de erro
+                self.label_mensagem.setText(mensagem)
+                
+                # Oferecer cadastro se o email não existir
+                if "não cadastrado" in mensagem.lower():
+                    resposta = QMessageBox.question(
+                        self,
+                        "Cadastro",
+                        "E-mail não encontrado. Deseja criar uma nova conta?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                    if resposta == QMessageBox.StandardButton.Yes:
+                        self.abrir_tela_cadastro()
+                        
+        except Exception as e:
+            print(f"Erro ao fazer login: {e}")
+            self.label_mensagem.setText("Erro interno. Tente novamente.")
 
     def abrir_tela_cadastro(self):
         self.tela_cadastro = TelaCadastro(tela_login_callback=self.show)
@@ -168,8 +225,7 @@ class TelaLogin(QMainWindow):
         label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         label.show()
 
-# ----------- game screen transition ---------------
-
+    # ----------- game screen transition ---------------
     def abrir_game_animacao(self):
         self.animar_transicao(self.ir_game_screen)
 
@@ -187,9 +243,8 @@ class TelaLogin(QMainWindow):
         ))
         self.animacao.start()
 
-
     def ir_game_screen(self, fade_in=False):
-        self.tela_game = GameScreen(tela_login=self)  # <- passa referência da tela de login aqui
+        self.tela_game = GameScreen(tela_login=self)
         self.tela_game.show()
 
         if fade_in:
@@ -205,10 +260,6 @@ class TelaLogin(QMainWindow):
             self.close()
         else:
             self.close()
-
-
-
-
 
 # ---------------------------------- cadastro ---------------
 
@@ -316,17 +367,7 @@ class TelaCadastro(QMainWindow):
                 color: #130060;
             }
         """)
-
         layout.addWidget(self.checkbox_termos)
-
-
-
-
-
-
-
-
-
 
         # Captcha
         self.num1 = random.randint(1, 10)
@@ -482,8 +523,6 @@ class TelaCadastro(QMainWindow):
         else:
             self.label_msg.setText("Cadastro realizado com sucesso!")
             self.label_msg.setStyleSheet("color: green; font-size: 13px;")
-
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
