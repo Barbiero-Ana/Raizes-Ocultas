@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, )
 from database.criar_banco import Database, Funcoes_DataBase
 import sys
-from validador import Validador
+from backend.validador import Validador
 import requests
 import sqlite3
 import hashlib
