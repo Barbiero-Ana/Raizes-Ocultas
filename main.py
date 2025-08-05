@@ -32,7 +32,7 @@ def check_files():
         ('front/Screens/game_screen.py', 'Tela do Jogo'),
         ('backend/login.py', 'Sistema de Login'),
         ('backend/validador.py', 'Validador'),
-        ('database/criar_banco.py', 'Banco de Dados'),
+        ('Database/criar_banco.py', 'Banco de Dados'),
     ]
     
     optional_files = [
@@ -61,10 +61,10 @@ def check_files():
 def initialize_database():
     print("\nBanco iniciado e funcionando !")
     try:
-        from database.criar_banco import Database, Funcoes_DataBase
+        from Database.criar_banco import Database, Funcoes_DataBase
         
         # Caminho do banco
-        db_path = os.path.join("database", "raizes_ocultas.db")
+        db_path = os.path.join("Database", "raizes_ocultas.db")
         db = Database(db_path)
         funcoes = Funcoes_DataBase(db_path)
         

@@ -549,10 +549,10 @@ class TelaCadastro(QMainWindow):
 
         try:
             import hashlib
-            from database.criar_banco import Funcoes_DataBase
+            from Database.criar_banco import Funcoes_DataBase
             import os
             
-            db_path = os.path.join("database", "raizes_ocultas.db")
+            db_path = os.path.join("Database", "raizes_ocultas.db")
             funcoes_db = Funcoes_DataBase(db_path)
             
             # Hash da senha
