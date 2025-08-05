@@ -1,17 +1,16 @@
-from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, )
+from PyQt6.QtWidgets import QMessageBox
 from database.criar_banco import Database, Funcoes_DataBase
 import sys
+import os
 from backend.validador import Validador
-import requests
 import sqlite3
 import hashlib
-from front.Screens.Login_screen import TelaLogin
 
-# Pensar nos módulos como seres mais independentes
 
 class Login:
     def __init__(self):
-        self.db = Funcoes_DataBase("Raizes_Ocultas.db")
+        db_path = os.path.join("database", "raizes_ocultas.db")
+        self.db = Funcoes_DataBase(db_path)
     
     def verificar_credenciais(self, email: str, senha: str) -> tuple:
         """
@@ -40,21 +39,13 @@ class Login:
                     SELECT id_usuario, cripto_senha, deletado 
                     FROM Usuario 
                     WHERE email = ?
-                """, (email,))  # Corrigido: adicionada vírgula para criar tupla
+                """, (email,))
                 
                 usuario = cursor.fetchone()
                 
                 if not usuario:    
-                    resposta = QMessageBox.question(
-                        self,
-                        "E-mail não cadastrado",
-                        "E-mail não encontrado. Deseja se cadastrar ?",
-                        QMessageBox.standardButton.YES | QMessageBox.standardButton.No
-                    )
-                    if resposta == QMessageBox.standardButton.Yes:
-                        TelaLogin.abrir_tela_cadastro()
-                
-                                 
+                    return False, "E-mail não cadastrado", None
+
                 id_usuario, hash_armazenado, deletado = usuario
                 
                 if deletado:
@@ -82,48 +73,14 @@ class Login:
         Returns:
             tuple: (sucesso: bool, mensagem: str, id_usuario: int)
         """
-        # Validação básica dos campos
+        # Validação dos campos
         if not email.strip() or not senha.strip():
             return False, "Preencha todos os campos", None
             
-        # Valida formato do email
+        # Valida o email
         valido, msg = Validador.validar_email(email)
         if not valido:
             return False, msg, None
             
-        # Verifica credenciais no banco
+        # Verifica  no banco
         return self.verificar_credenciais(email, senha)
-    
-
-    # Adicione este novo método à classe TelaLogin:
-    def validar_e_abrir_jogo(self):
-        """Valida as credenciais antes de abrir o jogo"""
-        email = self.input_email.text().strip()
-        senha = self.input_senha.text().strip()
-        
-        # Cria instância do sistema de login, passando self como parent_window
-        login_system = Login(parent_window=self)
-        
-        # Valida as credenciais
-        sucesso, mensagem, id_usuario = login_system.realizar_login(email, senha)
-        
-        if sucesso:
-            # Salva o ID do usuário se necessário
-            self.id_usuario = id_usuario
-            
-            # Se as credenciais estiverem corretas, abre o jogo
-            self.abrir_game_animacao()
-        else:
-            # Mostra mensagem de erro
-            QMessageBox.warning(self, "Acesso Negado", mensagem)
-            
-            # Opcional: oferecer cadastro se o email não existir
-            if "não cadastrado" in mensagem:
-                resposta = QMessageBox.question(
-                    self,
-                    "Cadastro",
-                    "Deseja criar uma nova conta?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                )
-                if resposta == QMessageBox.StandardButton.Yes:
-                    self.abrir_tela_cadastro()

@@ -1,66 +1,132 @@
-from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, QListWidgetItem, 
-                            QLineEdit, QRadioButton, QCheckBox, QComboBox, QDateEdit)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QDate
-from PyQt6 import uic
-from database.criar_banco import Database
-import sys
-from validador import Validador
-import requests
-import sqlite3
+import os
 import hashlib
+import sqlite3
+from database.criar_banco import Funcoes_DataBase
+from backend.validador import Validador
 
-class Login:
+class Cadastrar:
     def __init__(self):
-        super().__init__()
-        self.db = Database("Raizes_Ocultas.db")
+        db_path = os.path.join("database", "raizes_ocultas.db")
+        self.db = Funcoes_DataBase(db_path)
     
-    def salvar_cliente(self):
-        # Coleta dados dos campos
-        campos = {
-            'Nome': self.nome.text(),
-            'Email': self.email.text(),
-            'Senha': self.senha.text()
-        }
-
+    def validar_dados_cadastro(self, nome: str, email: str, senha: str, confirmar_senha: str) -> tuple:
+        """
+        Valida os dados de cadastro
+        
+        Args:
+            nome: Nome do usuário
+            email: Email do usuário
+            senha: Senha
+            confirmar_senha: Confirmação da senha
+            
+        Returns:
+            tuple: (sucesso: bool, mensagem: str)
+        """
         # Validar campos obrigatórios
-        for campo, valor in campos.items():
-            if not valor.strip():
-                Validador.mostrar_erro(self, "Campo obrigatório", f"O campo {campo} é obrigatório")
-                return
-
-        # Validar CPF
-        valido, msg = Validador.validar_cpf(campos['CPF'], self.db)
-        if not valido:
-            Validador.mostrar_erro(self, "CPF inválido", msg)
-            return
+        if not nome.strip():
+            return False, "Nome é obrigatório"
         
-        # Validar Email
-        valido, msg = Validador.validar_email(campos['Email'])
-        if not valido:
-            Validador.mostrar_erro(self, "Email inválido", msg)
-            return
+        if not email.strip():
+            return False, "E-mail é obrigatório"
+            
+        if not senha:
+            return False, "Senha é obrigatória"
+            
+        if not confirmar_senha:
+            return False, "Confirmação de senha é obrigatória"
         
-        # Hash da senha
-        senha_hash = hashlib.sha256(campos['Senha'].encode()).hexdigest()
+        # Validar formato do email
+        valido, msg = Validador.validar_email(email)
+        if not valido:
+            return False, msg
+        
+        # Validar se as senhas coincidem
+        if senha != confirmar_senha:
+            return False, "As senhas não coincidem"
+        
+        # Validar força da senha
+        if len(senha) < 6:
+            return False, "Senha deve ter pelo menos 6 caracteres"
+        
+        return True, "Dados válidos"
+    
+    def cadastrar_usuario(self, nome: str, email: str, senha: str, confirmar_senha: str) -> tuple:
+        """
+        Cadastra um novo usuário
+        
+        Args:
+            nome: Nome do usuário
+            email: Email do usuário
+            senha: Senha em texto puro
+            confirmar_senha: Confirmação da senha
+            
+        Returns:
+            tuple: (sucesso: bool, mensagem: str, id_usuario: int ou None)
+        """
+        # Validar dados
+        valido, msg = self.validar_dados_cadastro(nome, email, senha, confirmar_senha)
+        if not valido:
+            return False, msg, None
         
         try:
-            # Insere cliente no banco de dados
-            id_cliente = self.db.inserir_cliente(
-                nome=campos['Nome'].strip(),
-                email=campos['Email'].strip(),
-                senha=senha_hash
-            )
+            # Hash da senha
+            senha_hash = hashlib.sha256(senha.encode()).hexdigest()
             
-            QMessageBox.information(self, "Sucesso", "Cliente cadastrado com sucesso!")
-            return True
+            # Inserir no banco
+            user_id = self.db.inserir_cliente(nome.strip(), email.strip(), senha_hash)
             
+            if user_id:
+                return True, "Usuário cadastrado com sucesso!", user_id
+            else:
+                return False, "Erro ao inserir usuário no banco", None
+                
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint failed" in str(e):
-                Validador.mostrar_erro(self, "Erro", "Este CPF ou Email já está cadastrado no sistema.")
+                return False, "Este e-mail já está cadastrado", None
             else:
-                Validador.mostrar_erro(self, "Erro", f"Erro de integridade: {str(e)}")
-            return False
+                return False, f"Erro de integridade: {str(e)}", None
         
         except Exception as e:
-            QMessageBox.critical(self, "Erro", f'Erro ao cadastrar cliente: {str(e)}')
+            return False, f"Erro ao cadastrar usuário: {str(e)}", None
+    
+    def verificar_email_existe(self, email: str) -> bool:
+        """
+        Verifica se um email já está cadastrado
+        
+        Args:
+            email: Email para verificar
+            
+        Returns:
+            bool: True se o email já existe, False caso contrário
+        """
+        try:
+            conn = self.db.db.conectar_no_banco()
+            if conn is None:
+                return False
+                
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id_usuario FROM Usuario WHERE email = ?", (email,))
+                result = cursor.fetchone()
+                return result is not None
+                
+        except Exception as e:
+            print(f"Erro ao verificar email: {e}")
             return False
+        finally:
+            self.db.db.fechar_conexao()
+
+def cadastrar_usuario_simples(nome: str, email: str, senha: str) -> tuple:
+    """
+    Função utilitária para cadastrar um usuário de forma simples
+    
+    Args:
+        nome: Nome do usuário
+        email: Email do usuário
+        senha: Senha em texto puro
+        
+    Returns:
+        tuple: (sucesso: bool, mensagem: str, id_usuario: int ou None)
+    """
+    cadastrador = Cadastrar()
+    return cadastrador.cadastrar_usuario(nome, email, senha, senha)
