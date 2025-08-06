@@ -6,7 +6,6 @@ from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt
 import os
 
-# Import condicional para evitar erros
 try:
     from class_register_screen import ClassRegisterDialog
 except ImportError:
@@ -23,7 +22,7 @@ class GameScreen(QMainWindow):
 
         # --- Fonte
 
-        font_path = "assets/fonts/DUNGRG_.TTF"
+        font_path = "assets/fonts/Gameplay.ttf"
         font_path = font_path.replace("\\", "/")  
         abs_font_path = os.path.abspath(font_path)
 
@@ -43,7 +42,7 @@ class GameScreen(QMainWindow):
             print("Falha ao carregar a fonte!")
             self.fonte_medieval = "Georgia"
 
-        # --- Central widget ---
+        # --- Central 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
@@ -198,7 +197,7 @@ class GameScreen(QMainWindow):
 
         frame_novo, self.btn_novo_jogo = criar_botao_com_icone("Nova Turma")
         frame_carregar, self.btn_carregar_jogo = criar_botao_com_icone("Carregar Turma")
-        frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatísticas")
+        frame_stats, self.btn_estatisticas = criar_botao_com_icone("Estatisticas")
 
         botoes_layout.addWidget(frame_novo)
         botoes_layout.addWidget(frame_carregar)
@@ -265,7 +264,6 @@ class GameScreen(QMainWindow):
         self.btn_projeto.clicked.connect(self.mostrar_projeto)
 
     def abrir_tela_criar_turma(self):
-        """Abre a tela de criação de turma"""
         if ClassRegisterDialog:
             self.class_register_screen = ClassRegisterDialog(self)
             self.class_register_screen.exec()
@@ -275,27 +273,22 @@ class GameScreen(QMainWindow):
             QMessageBox.information(self, "Info", "Funcionalidade em desenvolvimento!")
 
     def carregar_turma(self):
-        """Carrega uma turma existente"""
         from PyQt6.QtWidgets import QMessageBox
         QMessageBox.information(self, "Carregar Turma", "Funcionalidade em desenvolvimento!")
 
     def mostrar_estatisticas(self):
-        """Mostra as estatísticas"""
         from PyQt6.QtWidgets import QMessageBox
         QMessageBox.information(self, "Estatísticas", "Funcionalidade em desenvolvimento!")
 
     def mostrar_equipe(self):
-        """Mostra informações da equipe"""
         from PyQt6.QtWidgets import QMessageBox
-        QMessageBox.information(self, "Equipe", "Desenvolvido pela equipe Raízes Ocultas!")
+        QMessageBox.information(self, "Equipe", "Desenvolvido pela equipe *Raízes Ocultas*\n Equipe composta por:\n- Ana Barbiero 1\n- João Antonio\n - Turma 2 - Matutino")
 
     def mostrar_projeto(self):
-        """Mostra informações do projeto"""
         from PyQt6.QtWidgets import QMessageBox
         QMessageBox.information(self, "Projeto", "Jogo educativo Raízes Ocultas\nVersão 1.0")
 
     def adjust_button_font(self, button):
-        """Ajusta o tamanho da fonte dos botões"""
         screen_width = self.width()
 
         if button == self.btn_voltar:
@@ -307,7 +300,6 @@ class GameScreen(QMainWindow):
         button.setFont(font)
 
     def voltar_para_login(self):
-        """Volta para a tela de login"""
         self.close()
         if self.tela_login:
             self.tela_login.show()
