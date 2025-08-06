@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QMessageBox
-from Database.criar_banco import Database, Funcoes_DataBase
+from database.criar_banco import Database, Funcoes_DataBase
 import sys
 import os
 from backend.validador import Validador
