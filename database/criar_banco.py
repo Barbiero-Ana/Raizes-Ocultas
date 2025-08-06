@@ -62,7 +62,9 @@ class Database:
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Turma(
                     id_turma INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome_turma TEXT NOT NULL,
+                    nome_turma TEXT NOT NULL UNIQUE,
+                    quantidade_turma INTEGER NOT NULL,
+                    serie_turma TEXT NOT NULL, 
                     vida_max INTEGER NOT NULL,
                     vida_atual INTEGER NOT NULL,
                     pontos_acerto INTEGER NOT NULL DEFAULT 0,
@@ -142,6 +144,28 @@ class Funcoes_DataBase:
     def __init__(self, db_name):
         self.db = Database(db_name)
         
+    def inserir_turma(self,nome,quantidade,serie):
+        conn = self.db.conectar_no_banco()
+        if conn is None:
+            return False,"Erro ao conectar ao banco"
+        try:
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO Turma (
+                        nome_turma, quantidade_turma, serie_turma
+                        ) VALUES(?,?,?)
+                """,(nome,quantidade,serie))
+                return cursor.lastrowid
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed" in str(e):
+                raise Exception ("Esta turma já está cadastrada")
+            raise Exception (f'Erro de integridade:{str(e)}')
+        except Error as e:
+            raise Exception(f"Erro ao inserir Turma: {str(e)}")
+        finally:
+            self.db.fechar_conexao()
+
     def salvar_turma(self, turma):
         if not self.validar_turma(turma):
             return False, "Dados da turma inválidos"
@@ -234,11 +258,12 @@ class Funcoes_DataBase:
         finally:
             self.db.fechar_conexao()
     
+    
     def inserir_cliente(self, nome, email, senha):
         """Insere um novo usuário no banco de dados"""
-        conn = self.db.conectar_no_banco()
+        conn = self.db.conectar_no_banco()  # Alterado de self.conectar_no_banco() para self.db.conectar_no_banco()
         if conn is None:
-            return None
+            raise Exception("Não foi possível conectar ao banco de dados")
             
         try:
             with conn:
@@ -249,11 +274,15 @@ class Funcoes_DataBase:
                     ) VALUES (?, ?, ?)
                 """, (nome, email, senha))
                 return cursor.lastrowid
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed" in str(e):
+                raise Exception("Este e-mail já está cadastrado")
+            raise Exception(f"Erro de integridade: {str(e)}")
         except Error as e:
-            raise e
+            raise Exception(f"Erro ao inserir usuário: {str(e)}")
         finally:
-            self.db.fechar_conexao()
-    
+            self.db.fechar_conexao()  # Alterado de self.fechar_conexao() para self.db.fechar_conexao()
+        
     def inserir_perguntas_padrao(self):
         """Insere as perguntas padrão no banco de dados"""
         perguntas_exemplo = [

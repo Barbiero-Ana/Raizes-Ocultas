@@ -520,9 +520,43 @@ class TelaCadastro(QMainWindow):
         if erros:
             self.label_msg.setText("<br>".join(erros))
             self.label_msg.setStyleSheet("color: red; font-size: 12px;")
-        else:
-            self.label_msg.setText("Cadastro realizado com sucesso!")
-            self.label_msg.setStyleSheet("color: green; font-size: 13px;")
+            return
+
+        # Tentar cadastrar o usuário
+        try:
+            # Importar a função de cadastro
+            sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+            from backend.cadastrar import cadastrar_usuario_simples
+            
+            # Usar parte do email como nome (ou poderia adicionar um campo de nome no formulário)
+            nome = email.split('@')[0]
+            
+            # Chamar a função de cadastro
+            sucesso, mensagem, _ = cadastrar_usuario_simples(nome, email, senha)
+            
+            if sucesso:
+                self.label_msg.setText("Cadastro realizado com sucesso!")
+                self.label_msg.setStyleSheet("color: green; font-size: 13px;")
+                
+                # Limpar campos após cadastro bem-sucedido
+                self.input_email.clear()
+                self.input_senha.clear()
+                self.input_repetir_senha.clear()
+                self.input_captcha.clear()
+                self.checkbox_termos.setChecked(False)
+                
+                # Gerar novo captcha
+                self.num1 = random.randint(1, 10)
+                self.num2 = random.randint(1, 10)
+                self.resultado_captcha = self.num1 + self.num2
+                self.label_captcha.setText(f"Pergunta de segurança: Quanto é {self.num1} + {self.num2}?")
+            else:
+                self.label_msg.setText(mensagem)
+                self.label_msg.setStyleSheet("color: red; font-size: 12px;")
+                
+        except Exception as e:
+            self.label_msg.setText(f"Erro ao cadastrar: {str(e)}")
+            self.label_msg.setStyleSheet("color: red; font-size: 12px;")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

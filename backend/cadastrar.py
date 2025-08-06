@@ -6,9 +6,35 @@ from backend.validador import Validador
 
 class Cadastrar:
     def __init__(self):
+        # Garante que o diretório database existe
+        if not os.path.exists("database"):
+            os.makedirs("database")
+            
         db_path = os.path.join("database", "raizes_ocultas.db")
         self.db = Funcoes_DataBase(db_path)
-    
+        
+        # Verifica se o banco existe e tem as tabelas necessárias
+        if not self.verificar_banco_pronto():
+            raise Exception("Banco de dados não está pronto para uso")
+
+    def verificar_banco_pronto(self):
+        """Verifica se o banco de dados existe e tem a tabela Usuario"""
+        try:
+            conn = self.db.db.conectar_no_banco()
+            if conn is None:
+                return False
+                
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Usuario'")
+                return cursor.fetchone() is not None
+                
+        except Exception as e:
+            print(f"Erro ao verificar banco: {e}")
+            return False
+        finally:
+            self.db.db.fechar_conexao()
+            
     def validar_dados_cadastro(self, nome: str, email: str, senha: str, confirmar_senha: str) -> tuple:
         """
         Valida os dados de cadastro
