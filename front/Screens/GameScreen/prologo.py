@@ -1,15 +1,109 @@
-
 import sys
 import os
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton, 
     QVBoxLayout, QHBoxLayout, QGraphicsOpacityEffect
 )
-from PyQt6.QtGui import QPixmap, QFont, QCursor, QPainter, QColor
+from PyQt6.QtGui import QPixmap, QFont, QCursor, QPainter, QColor, QFontDatabase
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, 
     pyqtSignal, QRect
 )
+
+class FontManager:    
+    def __init__(self):
+        self.loaded_fonts = {}
+        self.debug_mode = True  # Ativar para ver mensagens de debug
+    
+    def load_font(self, font_path: str, font_name: str = None) -> str:
+        """
+        Args:
+            font_path: assets/fonts/Ghost theory 2.ttf)
+            font_name: FonteJogo
+        
+        Returns:
+            Nome da família da fonte carregada
+        """
+        if self.debug_mode:
+            print(f"🔍 Tentando carregar fonte: {font_path}")
+        
+        if not os.path.exists(font_path):
+            print(f"❌ ERRO: Fonte não encontrada em {font_path}")
+            print(f"📁 Diretório atual: {os.getcwd()}")
+            print(f"📁 Caminho absoluto tentado: {os.path.abspath(font_path)}")
+            return "Arial"  # Fonte padrão fallback
+        
+        # Carregar a fonte no banco de dados de fontes
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        
+        if font_id == -1:
+            print(f"❌ ERRO: Não foi possível carregar a fonte {font_path}")
+            return "Arial"
+        
+        # Obter o nome da família da fonte
+        font_families = QFontDatabase.applicationFontFamilies(font_id)
+        
+        if not font_families:
+            print(f"❌ ERRO: Nenhuma família de fonte encontrada em {font_path}")
+            return "Arial"
+        
+        font_family = font_families[0]
+        
+        # Armazenar a fonte carregada
+        key = font_name if font_name else os.path.basename(font_path)
+        self.loaded_fonts[key] = font_family
+        
+        if self.debug_mode:
+            print(f"✅ Fonte carregada com sucesso!")
+            print(f"   📝 Família da fonte: {font_family}")
+            print(f"   🔑 Chave armazenada: {key}")
+            print(f"   📋 Todas as famílias disponíveis: {font_families}")
+        
+        return font_family
+    
+    def get_font(self, font_key: str, size: int = 12, bold: bool = False, italic: bool = False) -> QFont:
+        """
+        Args:
+            font_key: FontJogo
+            size: Tamanho da fonte
+            bold: Se a fonte deve ser negrito
+            italic: Se a fonte deve ser itálica
+        
+        Returns:
+            Objeto QFont configurado
+        """
+        if self.debug_mode:
+            print(f"🎨 Criando fonte: {font_key}, tamanho {size}")
+        
+        if font_key in self.loaded_fonts:
+            font_family = self.loaded_fonts[font_key]
+            if self.debug_mode:
+                print(f"   ✅ Fonte encontrada: {font_family}")
+        else:
+            print(f"   ❌ Fonte {font_key} não encontrada, usando Arial")
+            print(f"   📋 Fontes disponíveis: {list(self.loaded_fonts.keys())}")
+            font_family = "Arial"
+        
+        font = QFont(font_family, size)
+        font.setBold(bold)
+        font.setItalic(italic)
+        
+        # Verificar se a fonte foi aplicada corretamente
+        if self.debug_mode:
+            print(f"   🔧 Fonte criada: {font.family()}, {font.pointSize()}px")
+            print(f"   ⚡ Fonte exata disponível: {font.exactMatch()}")
+        
+        return font
+    
+    def list_system_fonts(self):
+        """Lista todas as fontes disponíveis no sistema"""
+        if self.debug_mode:
+            families = QFontDatabase.families()
+            print(f"📚 Fontes do sistema ({len(families)} disponíveis):")
+            for i, family in enumerate(families[:10]):  # Mostrar apenas as 10 primeiras
+                print(f"   {i+1}. {family}")
+            if len(families) > 10:
+                print(f"   ... e mais {len(families) - 10} fontes")
 
 class TypewriterLabel(QLabel):
     typing_finished = pyqtSignal()
@@ -83,6 +177,17 @@ class PrologoRPG(QMainWindow):
         self.on_finish_callback = on_finish_callback
         self.current_text_index = 0
         
+        print("🚀 Iniciando Prólogo RPG...")
+        
+        # Inicializar gerenciador de fontes
+        self.font_manager = FontManager()
+        
+        # Debug: mostrar algumas fontes do sistema
+        self.font_manager.list_system_fonts()
+        
+        # Carregar fontes personalizadas
+        self.load_custom_fonts()
+        
         # Textos do prólogo
         self.prologo_texts = [
             "Há muito tempo, nas terras místicas de Mato Grosso...",
@@ -95,10 +200,46 @@ class PrologoRPG(QMainWindow):
         
         self.setup_ui()
         self.setup_animations()
+    
+    def load_custom_fonts(self):
+        print("\n📂 Carregando fontes personalizadas...")
+        
+        # Verificar se o diretório de fontes existe
+        fonts_dir = "assets/fonts"
+        if not os.path.exists(fonts_dir):
+            print(f"❌ Diretório de fontes não existe: {fonts_dir}")
+            print(f"📁 Criando diretório...")
+            try:
+                os.makedirs(fonts_dir, exist_ok=True)
+                print(f"✅ Diretório criado: {fonts_dir}")
+            except:
+                print(f"❌ Não foi possível criar o diretório")
+        
+        # Lista de arquivos no diretório de fontes
+        if os.path.exists(fonts_dir):
+            print(f"📋 Arquivos em {fonts_dir}:")
+            for file in os.listdir(fonts_dir):
+                print(f"   📄 {file}")
+        
+        # Defina aqui os caminhos para suas fontes
+        font_paths = {
+            "titulo": "assets/fonts/Ghost theory 2.ttf",          # Para título do jogo
+            "narração": "assets/fonts/Ghost theory 2.ttf",      # Usando a mesma fonte para teste
+            "botoes": "assets/fonts/Ghost theory 2.ttf",          # Usando a mesma fonte para teste
+            "dialogo": "assets/fonts/Ghost theory 2.ttf",        # Usando a mesma fonte para teste
+        }
+        
+        # Carregar cada fonte (se existir)
+        for font_name, font_path in font_paths.items():
+            self.font_manager.load_font(font_path, font_name)
+        
+        print(f"🎯 Fontes carregadas: {list(self.font_manager.loaded_fonts.keys())}")
         
     def setup_ui(self):
         self.setWindowTitle("Raízes Ocultas - Prólogo")
         self.setFixedSize(1000, 700)
+        
+        print("🎨 Configurando interface...")
         
         # Widget principal
         main_widget = QWidget()
@@ -120,6 +261,32 @@ class PrologoRPG(QMainWindow):
                     stop:0 #1a1a2e, stop:0.3 #16213e, stop:0.7 #0f3460, stop:1 #533a7d);
             }
         """)
+        
+        # === TÍTULO DO JOGO ===
+        title_layout = QHBoxLayout()
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.title_label = QLabel("Raízes Ocultas")
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Aplicar fonte personalizada ao título
+        title_font = self.font_manager.get_font("titulo", size=32, bold=True)
+        self.title_label.setFont(title_font)
+        print(f"🏷️ Fonte do título aplicada: {title_font.family()}")
+        
+        self.title_label.setStyleSheet("""
+            QLabel {
+                color: #f0f0f0;
+                margin: 20px;
+                padding: 10px;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 10px;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+            }
+        """)
+        
+        title_layout.addWidget(self.title_label)
+        main_layout.addLayout(title_layout)
         
         # === PERSONAGEM NARRADOR ===
         character_layout = QVBoxLayout()
@@ -154,8 +321,9 @@ class PrologoRPG(QMainWindow):
         else:
             # Placeholder se não encontrar a imagem
             self.character_image.setText("🧙‍♂️")
+            placeholder_font = self.font_manager.get_font("dialogo", size=60)
+            self.character_image.setFont(placeholder_font)
             self.character_image.setStyleSheet("""
-                font-size: 80px;
                 color: #f0f0f0;
                 background: transparent;
             """)
@@ -183,10 +351,15 @@ class PrologoRPG(QMainWindow):
         self.text_label = TypewriterLabel()
         self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.text_label.setWordWrap(True)
+        
+        # Aplicar fonte personalizada ao texto de narração
+        narration_font = self.font_manager.get_font("narração", size=18, bold=False)  # Removendo bold para testar
+        self.text_label.setFont(narration_font)
+        print(f"📝 Fonte da narração aplicada: {narration_font.family()}")
+        
+        # Remover font-weight do CSS para não conflitar
         self.text_label.setStyleSheet("""
             QLabel {
-                font-size: 18px;
-                font-weight: bold;
                 color: #2c3e50;
                 background: transparent;
                 line-height: 1.4;
@@ -211,6 +384,13 @@ class PrologoRPG(QMainWindow):
         self.continue_button = QPushButton("Continuar ▶")
         self.continue_button.setFixedSize(150, 45)
         self.continue_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        # Aplicar fonte personalizada ao botão
+        button_font = self.font_manager.get_font("botoes", size=14, bold=True)
+        self.continue_button.setFont(button_font)
+        print(f"🔘 Fonte do botão aplicada: {button_font.family()}")
+        
+        # Remover font-weight do CSS para não conflitar com a fonte
         self.continue_button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
@@ -218,8 +398,6 @@ class PrologoRPG(QMainWindow):
                 color: white;
                 border: none;
                 border-radius: 22px;
-                font-size: 14px;
-                font-weight: bold;
                 padding: 12px;
             }
             QPushButton:hover {
@@ -263,6 +441,7 @@ class PrologoRPG(QMainWindow):
         self.button_animation.setEndValue(1.0)
         
     def start_prologue(self):
+        print("▶️ Iniciando prólogo...")
         # Iniciar animação do fundo
         self.fade_animation.start()
         
@@ -290,6 +469,7 @@ class PrologoRPG(QMainWindow):
             self.finish_prologue()
     
     def finish_prologue(self):
+        print("🏁 Prólogo finalizado!")
         if self.on_finish_callback:
             self.on_finish_callback()
         else:
