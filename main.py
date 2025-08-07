@@ -61,7 +61,7 @@ def check_files():
 def initialize_database():
     print("\nBanco iniciado e funcionando !")
     try:
-        from Database.criar_banco import Database, Funcoes_DataBase
+        from database.criar_banco import Database, Funcoes_DataBase
         
         # Caminho do banco
         db_path = os.path.join("Database", "raizes_ocultas.db")

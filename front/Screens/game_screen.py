@@ -22,7 +22,7 @@ class GameScreen(QMainWindow):
 
         # --- Fonte
 
-        font_path = "assets/fonts/Gameplay.ttf"
+        font_path = "assets/fonts/Ghost theory 2.ttf"
         font_path = font_path.replace("\\", "/")  
         abs_font_path = os.path.abspath(font_path)
 
