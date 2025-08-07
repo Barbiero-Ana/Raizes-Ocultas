@@ -144,6 +144,7 @@ class Funcoes_DataBase:
     def __init__(self, db_name):
         self.db = Database(db_name)
         
+<<<<<<< Updated upstream
     def inserir_turma(self,nome,quantidade,serie):
         conn = self.db.conectar_no_banco()
         if conn is None:
@@ -166,6 +167,8 @@ class Funcoes_DataBase:
         finally:
             self.db.fechar_conexao()
 
+=======
+>>>>>>> Stashed changes
     def salvar_turma(self, turma):
         if not self.validar_turma(turma):
             return False, "Dados da turma inválidos"
@@ -261,7 +264,11 @@ class Funcoes_DataBase:
     
     def inserir_cliente(self, nome, email, senha):
         """Insere um novo usuário no banco de dados"""
+<<<<<<< Updated upstream
         conn = self.db.conectar_no_banco()  # Alterado de self.conectar_no_banco() para self.db.conectar_no_banco()
+=======
+        conn = self.db.conectar_no_banco()
+>>>>>>> Stashed changes
         if conn is None:
             raise Exception("Não foi possível conectar ao banco de dados")
             
@@ -281,8 +288,13 @@ class Funcoes_DataBase:
         except Error as e:
             raise Exception(f"Erro ao inserir usuário: {str(e)}")
         finally:
+<<<<<<< Updated upstream
             self.db.fechar_conexao()  # Alterado de self.fechar_conexao() para self.db.fechar_conexao()
         
+=======
+            self.db.fechar_conexao()
+    
+>>>>>>> Stashed changes
     def inserir_perguntas_padrao(self):
         """Insere as perguntas padrão no banco de dados"""
         perguntas_exemplo = [

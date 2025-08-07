@@ -1,5 +1,9 @@
 from PyQt6.QtWidgets import QMessageBox
+<<<<<<< Updated upstream
 from database.criar_banco import Database, Funcoes_DataBase
+=======
+from Database.criar_banco import Database, Funcoes_DataBase
+>>>>>>> Stashed changes
 import sys
 import os
 from backend.validador import Validador

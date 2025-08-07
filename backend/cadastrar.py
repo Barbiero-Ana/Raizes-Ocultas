@@ -6,6 +6,7 @@ from backend.validador import Validador
 
 class Cadastrar:
     def __init__(self):
+<<<<<<< Updated upstream
         # Garante que o diretório database existe
         if not os.path.exists("database"):
             os.makedirs("database")
@@ -35,6 +36,11 @@ class Cadastrar:
         finally:
             self.db.db.fechar_conexao()
             
+=======
+        db_path = os.path.join("database", "raizes_ocultas.db")
+        self.db = Funcoes_DataBase(db_path)
+    
+>>>>>>> Stashed changes
     def validar_dados_cadastro(self, nome: str, email: str, senha: str, confirmar_senha: str) -> tuple:
         """
         Valida os dados de cadastro
