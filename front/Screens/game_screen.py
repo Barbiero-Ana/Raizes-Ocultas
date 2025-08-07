@@ -271,7 +271,7 @@ class GameScreen(QMainWindow):
             print("⚠️  Funcionalidade de criar turma não disponível")
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.information(self, "Info", "Funcionalidade em desenvolvimento!")
-
+    
     def carregar_turma(self):
         from PyQt6.QtWidgets import QMessageBox
         QMessageBox.information(self, "Carregar Turma", "Funcionalidade em desenvolvimento!")

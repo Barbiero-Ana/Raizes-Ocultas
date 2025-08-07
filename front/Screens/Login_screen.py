@@ -175,7 +175,7 @@ class TelaLogin(QMainWindow):
             
             # Validar as credenciais
             sucesso, mensagem, id_usuario = login_system.realizar_login(email, senha)
-            
+            self.id_usuario = id_usuario
             if sucesso:
                 # Salvar o ID do usuário
                 self.id_usuario = id_usuario
@@ -201,7 +201,7 @@ class TelaLogin(QMainWindow):
         except Exception as e:
             print(f"Erro ao fazer login: {e}")
             self.label_mensagem.setText("Erro interno. Tente novamente.")
-
+    
     def abrir_tela_cadastro(self):
         self.tela_cadastro = TelaCadastro(tela_login_callback=self.show)
         self.tela_cadastro.show()

@@ -144,23 +144,24 @@ class Funcoes_DataBase:
     def __init__(self, db_name):
         self.db = Database(db_name)
         
-    def inserir_turma(self,nome,quantidade,serie):
+    def inserir_turma(self, nome, quantidade, serie, vida_max, vida_atual, pontos_acerto, pontos_erro, vivo, id_usuario):
         conn = self.db.conectar_no_banco()
         if conn is None:
-            return False,"Erro ao conectar ao banco"
+            raise Exception("Erro ao conectar ao banco")
         try:
             with conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     INSERT INTO Turma (
-                        nome_turma, quantidade_turma, serie_turma
-                        ) VALUES(?,?,?)
-                """,(nome,quantidade,serie))
+                        nome_turma, quantidade_turma, serie_turma,
+                        vida_max, vida_atual, pontos_acerto, pontos_erro, vivo, id_usuario
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (nome, quantidade, serie, vida_max, vida_atual, pontos_acerto, pontos_erro, vivo, id_usuario))
                 return cursor.lastrowid
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint failed" in str(e):
-                raise Exception ("Esta turma já está cadastrada")
-            raise Exception (f'Erro de integridade:{str(e)}')
+                raise Exception("Esta turma já está cadastrada")
+            raise Exception(f'Erro de integridade: {str(e)}')
         except Error as e:
             raise Exception(f"Erro ao inserir Turma: {str(e)}")
         finally:
