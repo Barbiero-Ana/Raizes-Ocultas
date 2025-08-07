@@ -46,7 +46,8 @@ class CadastrarTurma:
 
         return True, "Dados válidos"
 
-    def cadastrar_turma(self, nome: str, quantidade: int, serie: str, id_usuario: int):
+    def cadastrar_turma(self, nome: str, quantidade: int, serie: str):
+        """Cadastra uma nova turma associada ao usuário"""
         # Valores padrão para nova turma
         vida_max = 3
         vida_atual = 3
@@ -55,6 +56,11 @@ class CadastrarTurma:
         vivo = True
         
         try:
+            # Valida os dados primeiro
+            valido, msg = self.validar_dados_cadastro_turma(nome, quantidade, serie)
+            if not valido:
+                return False, msg, None
+
             # Inserir no banco com todos os campos necessários
             turma_id = self.db.inserir_turma(
                 nome.strip(),
@@ -65,7 +71,7 @@ class CadastrarTurma:
                 pontos_acerto,
                 pontos_erro,
                 vivo,
-                id_usuario  # Usar o id_usuario passado como parâmetro
+                self.id_usuario  # Usa o id_usuario armazenado
             )
 
             if turma_id:
@@ -81,25 +87,9 @@ class CadastrarTurma:
         except Exception as e:
             return False, f"Erro ao cadastrar turma: {str(e)}", None
             
-    def verificar_se_nomeTurma_existe(self, nome: str) -> bool:
-        try:
-            conn = self.db.db.conectar_no_banco()
-            if conn is None:
-                return False
-            
-            with conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id_turma FROM Turma WHERE nome_turma = ?", (nome,))
-                result = cursor.fetchone()
-                return result is not None
-        
-        except Exception as e:
-            print(f'Erro ao verificar nome da Turma: {e}')
-            return False
-        finally:
-            self.db.db.fechar_conexao()
-        
     @staticmethod
     def cadastrar_turma_simples(nome: str, quantidade: int, serie: str, id_usuario: int) -> tuple:
-        inserir_turma = CadastrarTurma()
-        return inserir_turma.cadastrar_turma(nome, quantidade, serie, id_usuario)
+        """Método estático simplificado para cadastro de turma"""
+        cadastro = CadastrarTurma(id_usuario)
+        return cadastro.cadastrar_turma(nome, quantidade, serie)
+        

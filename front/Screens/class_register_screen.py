@@ -5,11 +5,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QCursor
 from PyQt6.QtCore import Qt
 import sqlite3
+from backend.cadastrar_turma import CadastrarTurma  # Moved import to top level
 
 
 class ClassRegisterDialog(QDialog):
     def __init__(self, parent=None, id_usuario=None):
-        from backend.cadastrar_turma import CadastrarTurma  # Importar a classe de cadastro de turma
         super().__init__(parent)
         self.setWindowTitle("Criar Nova Turma")
         self.setFixedSize(420, 580)
@@ -126,7 +126,6 @@ class ClassRegisterDialog(QDialog):
         layout.addWidget(self.btn_voltar)
 
     def cadastrar_turma(self):
-        from backend.cadastrar_turma import CadastrarTurma  # Importar a classe de cadastro de turma
         """Função para cadastrar a turma usando os dados dos inputs"""
         nome = self.nome_turma_input.text().strip()
         quantidade = int(self.combo_qtd_alunos.currentText())
@@ -139,10 +138,15 @@ class ClassRegisterDialog(QDialog):
 
         # Usar a classe CadastrarTurma para cadastrar
         cadastro = CadastrarTurma(self.id_usuario)
-        sucesso, mensagem, turma_id = cadastro.cadastrar_turma(nome, quantidade, serie, self.id_usuario)
+        sucesso, mensagem, turma_id = cadastro.cadastrar_turma(nome, quantidade, serie)
 
         if sucesso:
             QMessageBox.information(self, "Sucesso", mensagem)
             self.accept()  # Fechar o diálogo após cadastro bem-sucedido
         else:
-            QMessageBox.warning(self, "Erro", mensagem)
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Icon.Warning)
+            msg_box.setWindowTitle("Erro")
+            msg_box.setText(mensagem)
+            msg_box.setStyleSheet("QLabel{color: red;}")
+            msg_box.exec()
