@@ -2,6 +2,7 @@ import sqlite3
 from sqlite3 import Error
 import hashlib
 from datetime import datetime
+from backend.turma import Turma
 import os 
 
 class Database:
@@ -166,77 +167,56 @@ class Funcoes_DataBase:
             raise Exception(f"Erro ao inserir Turma: {str(e)}")
         finally:
             self.db.fechar_conexao()
+    
+    # Atualiza os Status da tumra 
+    def atuaziar_status_turma(self,id_turma):
+        cursor = self.conn.cursor()
 
-    def salvar_turma(self, turma):
-        if not self.validar_turma(turma):
-            return False, "Dados da turma inválidos"
-            
-        conn = self.db.conectar_no_banco()
-        if conn is None:
-            return False, "Erro ao conectar ao banco"
-            
-        try:
-            with conn:
-                cursor = conn.cursor()
-                
-                dados = (
-                    turma.nome_turma,
-                    turma.vida_max,
-                    turma.vida_atual,
-                    1 if getattr(turma, 'vivo', True) else 0,
-                    turma.id_usuario
-                )
-                
-                if hasattr(turma, 'id_turma') and turma.id_turma:
-                    # Atualização
-                    cursor.execute("""
-                        UPDATE Turma SET
-                            nome_turma = ?,
-                            vida_max = ?,
-                            vida_atual = ?,
-                            vivo = ?
-                        WHERE id_turma = ? AND id_usuario = ?
-                    """, dados + (turma.id_turma, turma.id_usuario))
-                    
-                    if cursor.rowcount == 0:
-                        return False, "Turma não encontrada ou não pertence ao usuário"
-                        
-                    return True, "Turma atualizada com sucesso"
-                else:
-                    # Inserção
-                    cursor.execute("""
-                        INSERT INTO Turma (
-                            nome_turma, vida_max, vida_atual, vivo, id_usuario
-                        ) VALUES (?, ?, ?, ?, ?)
-                    """, dados)
-                    
-                    turma.id_turma = cursor.lastrowid
-                    return True, "Turma criada com sucesso"
-                    
-        except Error as e:
-            print(f"Erro ao salvar turma: {e}")
-            return False, f"Erro no banco de dados: {e}"
-        finally:
-            self.db.fechar_conexao()
+        if id_turma: 
+            cursor.execute("""
+               UPDATE personagem SET 
+                    vida_max = ?,
+                    vida_atual = ?,
+                    pontos_acertos = ?,
+                    pontos_erros = ?,
+                    vivo = ?,
+                    WHERE id = ?  
+            """,(
+                id_turma.vida_max,
+                id_turma.vida_atual,
+                id_turma.pontos_acertos, 
+                id_turma.pontos_erros,
+                id_turma.vivo > 0,
+                id_turma.id
+            ))
+        self.conn.commit()
+        return id_turma
     
-    def validar_turma(self, turma):
-        """Valida os dados básicos da turma"""
-        required_attrs = [
-            'nome_turma', 'vida_max', 'vida_atual', 'id_usuario'
-        ]
+    # Carregar a as turmas para selecionar 
+    def carregar_turma(self,id_usuario):
+        cursor = self.conn.cursor()
+
+        cursor.execute("SELECT * FROM Turma WHERE id_usuario ?",(id_usuario))
         
-        for attr in required_attrs:
-            if not hasattr(turma, attr):
-                print(f"Atributo faltando: {attr}")
-                return False
-                
-        # Validações 
-        if turma.vida_atual > turma.vida_max:
-            print("Vida atual maior que vida máxima")
-            return False
-            
-        return True
-    
+        rows = cursor.fetchall()
+
+        turmas = []
+
+        for row in rows: 
+            turma = Turma(
+                id_turma=row[0],
+                nome = row[1],
+                quantidade = [2],
+                serie = row[3],
+                vida = row[4],
+                acertos = [6],
+                erros = [7], 
+            )
+            turmas.vida_atual = row[5]
+
+            turmas.append(turma)
+        return turmas
+
     def limpar_usuarios_deletados(self, dias=30):
         """Remove usuários deletados há mais de X dias"""
         conn = self.db.conectar_no_banco()

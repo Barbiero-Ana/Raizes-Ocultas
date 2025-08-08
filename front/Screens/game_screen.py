@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt
 import os
-
+from tela_das_turmas import ListarTurmasDialog
 try:
     from class_register_screen import ClassRegisterDialog
 except ImportError:
@@ -274,8 +274,9 @@ class GameScreen(QMainWindow):
             QMessageBox.information(self, "Info", "Funcionalidade em desenvolvimento!")
     
     def carregar_turma(self):
-        from PyQt6.QtWidgets import QMessageBox
-        QMessageBox.information(self, "Carregar Turma", "Funcionalidade em desenvolvimento!")
+        # Substitua o método existente por este:
+        dialog = ListarTurmasDialog(self, self.id_usuario)
+        dialog.exec()
 
     def mostrar_estatisticas(self):
         from PyQt6.QtWidgets import QMessageBox

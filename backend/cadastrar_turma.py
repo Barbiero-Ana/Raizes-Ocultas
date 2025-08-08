@@ -15,7 +15,7 @@ class CadastrarTurma:
         # Verifica se o banco existe e tem as tabelas necessárias
         if not self.verificar_banco_pronto():
             raise Exception("Banco de dados não está pronto para uso")
-
+    
     def verificar_banco_pronto(self):
         """Verifica se o banco de dados existe e tem a tabela Turma"""
         try:
@@ -45,7 +45,7 @@ class CadastrarTurma:
             return False, "Série é obrigatória"
 
         return True, "Dados válidos"
-
+    
     def cadastrar_turma(self, nome: str, quantidade: int, serie: str):
         """Cadastra uma nova turma associada ao usuário"""
         # Valores padrão para nova turma
@@ -86,7 +86,29 @@ class CadastrarTurma:
                 return False, f"Erro de integridade: {str(e)}", None  
         except Exception as e:
             return False, f"Erro ao cadastrar turma: {str(e)}", None
-            
+    
+    def listar_turmas_usuario(self, id_usuario: int) -> list:
+        """Retorna todas as turmas criadas por um usuário específico"""
+        try:
+            conn = self.db.db.conectar_no_banco()
+            if conn is None:
+                return []
+                
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id_turma,nome_turma,quantidade_turma,serie_turma FROM Turma
+                        WHERE id_usuario = ?
+                        ORDER BY id_turma DESC
+                """, (id_usuario,))
+                
+                return cursor.fetchall()
+                
+        except Exception as e:
+            print(f"Erro ao listar turmas: {e}")
+            return []
+        finally:
+            self.db.db.fechar_conexao()        
     @staticmethod
     def cadastrar_turma_simples(nome: str, quantidade: int, serie: str, id_usuario: int) -> tuple:
         """Método estático simplificado para cadastro de turma"""
