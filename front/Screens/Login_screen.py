@@ -158,11 +158,11 @@ class TelaLogin(QMainWindow):
         # Validações básicas
         if not email:
             self.label_mensagem.setText("Por favor, digite seu e-mail.")
-            return
+            return None  # Retorna None quando não há email
         
         if not senha:
             self.label_mensagem.setText("Por favor, digite sua senha.")
-            return
+            return None  # Retorna None quando não há senha
         
         # Validar credenciais usando o backend
         try:
@@ -183,6 +183,7 @@ class TelaLogin(QMainWindow):
                 
                 # Abrir o jogo com animação
                 self.abrir_game_animacao()
+                return id_usuario  # Retorna o id_usuario em caso de sucesso
             else:
                 # Mostrar mensagem de erro
                 self.label_mensagem.setText(mensagem)
@@ -197,10 +198,12 @@ class TelaLogin(QMainWindow):
                     )
                     if resposta == QMessageBox.StandardButton.Yes:
                         self.abrir_tela_cadastro()
+                return None  # Retorna None quando o login falha
                         
         except Exception as e:
             print(f"Erro ao fazer login: {e}")
             self.label_mensagem.setText("Erro interno. Tente novamente.")
+            return None  # Retorna None em caso de exceção
     
     def abrir_tela_cadastro(self):
         self.tela_cadastro = TelaCadastro(tela_login_callback=self.show)
@@ -244,7 +247,7 @@ class TelaLogin(QMainWindow):
         self.animacao.start()
 
     def ir_game_screen(self, fade_in=False):
-        self.tela_game = GameScreen(tela_login=self)
+        self.tela_game = GameScreen(tela_login=self, id_usuario=self.id_usuario)  # Passa o id_usuario
         self.tela_game.show()
 
         if fade_in:

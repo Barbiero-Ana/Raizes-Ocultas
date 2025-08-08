@@ -11,6 +11,7 @@ from backend.cadastrar_turma import CadastrarTurma  # Moved import to top level
 class ClassRegisterDialog(QDialog):
     def __init__(self, parent=None, id_usuario=None):
         super().__init__(parent)
+        self.id_usuario = id_usuario  # Armazena o id_usuario
         self.setWindowTitle("Criar Nova Turma")
         self.setFixedSize(420, 580)
         self.setStyleSheet("background-color: #F8F8F8;")
@@ -134,6 +135,11 @@ class ClassRegisterDialog(QDialog):
         # Validar os dados
         if not nome:
             QMessageBox.warning(self, "Aviso", "O nome da turma é obrigatório!")
+            return
+
+        # Verifica se id_usuario está definido
+        if self.id_usuario is None:
+            QMessageBox.critical(self, "Erro", "Usuário não identificado. Faça login novamente.")
             return
 
         # Usar a classe CadastrarTurma para cadastrar

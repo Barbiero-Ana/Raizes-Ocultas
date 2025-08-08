@@ -13,9 +13,10 @@ except ImportError:
     ClassRegisterDialog = None
 
 class GameScreen(QMainWindow):
-    def __init__(self, tela_login=None):
+    def __init__(self, tela_login=None, id_usuario=None):
         super().__init__()
-        self.tela_login = tela_login 
+        self.id_usuario = id_usuario  # Armazena o ID do usuário
+        self.tela_login = tela_login
 
         self.setWindowTitle("Raízes Ocultas - Jogo")
         self.setFixedSize(1000, 700)
@@ -265,7 +266,7 @@ class GameScreen(QMainWindow):
 
     def abrir_tela_criar_turma(self):
         if ClassRegisterDialog:
-            self.class_register_screen = ClassRegisterDialog(self)
+            self.class_register_screen = ClassRegisterDialog(self, id_usuario=self.id_usuario)  # Passa o id_usuario
             self.class_register_screen.exec()
         else:
             print("⚠️  Funcionalidade de criar turma não disponível")
