@@ -2,12 +2,12 @@ import sys
 import os
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton, 
-    QVBoxLayout, QHBoxLayout, QGraphicsOpacityEffect
+    QVBoxLayout, QHBoxLayout, QGraphicsOpacityEffect, QStackedWidget
 )
 from PyQt6.QtGui import QPixmap, QFont, QCursor, QPainter, QColor, QFontDatabase
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, 
-    pyqtSignal, QRect
+    pyqtSignal, QRect, QPoint
 )
 
 class FontManager:    
@@ -18,7 +18,7 @@ class FontManager:
     def load_font(self, font_path: str, font_name: str = None) -> str:
         """
         Args:
-            font_path: assets/fonts/Ghost theory 2.ttf)
+            font_path: assets/fonts/White Storm.otf)
             font_name: FonteJogo
         
         Returns:
@@ -92,18 +92,6 @@ class FontManager:
         if self.debug_mode:
             print(f"   🔧 Fonte criada: {font.family()}, {font.pointSize()}px")
             print(f"   ⚡ Fonte exata disponível: {font.exactMatch()}")
-            
-            # Verificação adicional: testar se a fonte está realmente disponível
-            available_families = QFontDatabase.families()
-            font_available_in_system = font_family in available_families
-            print(f"   🖥️ Fonte disponível no sistema: {font_available_in_system}")
-            
-            if not font_available_in_system and font_family != "Arial":
-                print(f"   🔄 Forçando carregamento da fonte novamente...")
-                # Tentar carregar novamente se não estiver disponível
-                test_font = QFont()
-                test_font.setFamily(font_family)
-                print(f"   🧪 Teste de família: {test_font.family()}")
         
         return font
     
@@ -116,6 +104,444 @@ class FontManager:
                 print(f"   {i+1}. {family}")
             if len(families) > 10:
                 print(f"   ... e mais {len(families) - 10} fontes")
+
+class MapButton(QPushButton):
+    """Botão customizado para locais do mapa"""
+    location_clicked = pyqtSignal(str, int)  # nome do local, nível
+    
+    def __init__(self, location_name: str, level: int, x: int, y: int, parent=None):
+        super().__init__(parent)
+        self.location_name = location_name
+        self.level = level
+        self.setFixedSize(40, 40)
+        self.move(x, y)
+        
+        # Estilo do botão do mapa
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FFD700, stop:1 #FFA500);
+                color: #8B4513;
+                border: 3px solid #8B4513;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FFFF00, stop:1 #FFD700);
+                transform: scale(1.1);
+            }}
+            QPushButton:pressed {{
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FFA500, stop:1 #FF8C00);
+            }}
+        """)
+        
+        self.setText(str(level))
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.clicked.connect(self.on_clicked)
+        
+    def on_clicked(self):
+        self.location_clicked.emit(self.location_name, self.level)
+
+class MapScreen(QMainWindow):
+    """Tela do mapa interativo"""
+    
+    def __init__(self, font_manager=None, parent=None):
+        super().__init__(parent)
+        self.font_manager = font_manager
+        self.setup_map_ui()
+        
+    def setup_map_ui(self):
+        self.setWindowTitle("Raízes Ocultas - Mapa")
+        self.setFixedSize(1000, 700)
+        
+        # Widget principal
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        
+        # Layout principal
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # === FUNDO DO MAPA ===
+        self.map_background = QLabel()
+        self.map_background.setGeometry(0, 0, 1000, 700)
+        
+        # Tentar carregar imagem de fundo do mapa
+        background_path = "assets/ScreenElements/gamescreen/Map/game-map.png"  # Ajuste o caminho para sua imagem
+        if os.path.exists(background_path):
+            # Carregar e redimensionar a imagem para caber na tela
+            background_pixmap = QPixmap(background_path).scaled(
+                1000, 700, 
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,  # Mantém proporção preenchendo toda a área
+                Qt.TransformationMode.SmoothTransformation
+            )
+            self.map_background.setPixmap(background_pixmap)
+            self.map_background.setScaledContents(True)  # Permite que a imagem se ajuste ao label
+            print(f"✅ Imagem de fundo carregada: {background_path}")
+        else:
+            # Fallback: usar gradiente se a imagem não for encontrada
+            print(f"❌ Imagem não encontrada: {background_path}")
+            self.map_background.setStyleSheet("""
+                QLabel {
+                    background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1,
+                        stop:0 #4A7C8B, stop:0.3 #5A8C6B, stop:0.7 #6A9C5B, stop:1 #7AAC4B);
+                    border: 10px solid #8B4513;
+                }
+            """)
+        
+        # Adicionar borda decorativa por cima da imagem
+        self.map_background.setStyleSheet(self.map_background.styleSheet() + """
+            QLabel {
+                border: 10px solid #8B4513;
+                border-radius: 15px;
+            }
+        """)
+        
+        # === TÍTULO DO MAPA ===
+        title_layout = QHBoxLayout()
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.map_title = QLabel("RAÍZES OCULTAS")
+        self.map_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Aplicar fonte personalizada ao título do mapa
+        if self.font_manager:
+            title_font = self.font_manager.get_font("titulo", size=36, bold=True)
+            self.map_title.setFont(title_font)
+        
+        self.map_title.setStyleSheet("""
+            QLabel {
+                color: #FFD700;
+                margin: 10px;
+                padding: 15px;
+                background: rgba(139, 69, 19, 0.8);
+                border-radius: 15px;
+                border: 3px solid #FFD700;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            }
+        """)
+        
+        title_layout.addWidget(self.map_title)
+        main_layout.addLayout(title_layout)
+        
+        # === ÁREA DO MAPA INTERATIVO ===
+        self.map_area = QWidget()
+        self.map_area.setFixedSize(960, 540)
+        self.map_area.setStyleSheet("""
+            QWidget {
+                background: rgba(34, 139, 34, 0.3);  /* Fundo semi-transparente para não esconder a imagem */
+                border: 5px solid #8B4513;
+                border-radius: 10px;
+                margin: 10px;
+            }
+        """)
+        
+        # Criar locais do mapa baseados na imagem
+        self.create_map_locations()
+        
+        # Centralizar o mapa
+        map_container = QHBoxLayout()
+        map_container.addStretch()
+        map_container.addWidget(self.map_area)
+        map_container.addStretch()
+        
+        main_layout.addLayout(map_container)
+        
+        # === BOTÃO VOLTAR ===
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        self.back_button = QPushButton("← Voltar ao Prólogo")
+        self.back_button.setFixedSize(200, 40)
+        self.back_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        # Aplicar fonte personalizada ao botão
+        if self.font_manager:
+            button_font = self.font_manager.get_font("botoes", size=12, bold=True)
+            self.back_button.setFont(button_font)
+        
+        self.back_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #8B4513, stop:1 #654321);
+                color: #FFD700;
+                border: 2px solid #FFD700;
+                border-radius: 20px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #A0522D, stop:1 #8B4513);
+            }
+        """)
+        
+        button_layout.addWidget(self.back_button)
+        button_layout.addSpacing(50)
+        
+        main_layout.addLayout(button_layout)
+        
+        # === BOTÃO PULAR (Removido o connect que causava erro) ===
+        skip_layout = QHBoxLayout()
+        skip_layout.addStretch()
+        
+        self.skip_button = QPushButton("⏭️ Começar Jogo")
+        self.skip_button.setFixedSize(150, 35)
+        self.skip_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        # Aplicar fonte personalizada ao botão pular
+        if self.font_manager:
+            skip_font = self.font_manager.get_font("botoes", size=12, bold=True)
+            self.skip_button.setFont(skip_font)
+        
+        self.skip_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #32CD32, stop:1 #228B22);
+                color: #FFFFFF;
+                border: 2px solid #228B22;
+                border-radius: 17px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #3CB371, stop:1 #2E8B57);
+                color: #FFFFFF;
+                transform: translateY(-1px);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #228B22, stop:1 #006400);
+            }
+        """)
+        
+        # Conectar ao método correto (será conectado no GameManager)
+        # self.skip_button.clicked.connect(self.start_game)  # Será conectado externamente
+        
+        skip_layout.addWidget(self.skip_button)
+        skip_layout.addSpacing(30)
+        
+        main_layout.addLayout(skip_layout)
+        main_layout.addStretch()
+        
+    def create_map_locations(self):
+        """Criar os locais clicáveis do mapa baseados na imagem"""
+        
+        # Locais baseados na imagem do mapa que você enviou
+        locations = [
+            # Lado esquerdo (aldeias indígenas)
+            {"name": "Aldeia Bororo", "level": 1, "x": 180, "y": 100},
+            {"name": "Aldeia Xavante", "level": 2, "x": 120, "y": 140},
+            {"name": "Aldeia Karajá", "level": 3, "x": 160, "y": 200},
+            {"name": "Aldeia Terena", "level": 4, "x": 100, "y": 260},
+            
+            # Centro (locais especiais)
+            {"name": "Centro Geodésico", "level": 1, "x": 450, "y": 180},
+            {"name": "Chapada dos Guimarães", "level": 2, "x": 420, "y": 240},
+            
+            # Lado direito (castelo e vilas)
+            {"name": "Castelo dos Bandeirantes", "level": 4, "x": 720, "y": 120},
+            {"name": "Vila dos Quilombolas", "level": 1, "x": 680, "y": 200},
+            {"name": "Povoado Pantaneiro", "level": 3, "x": 650, "y": 280},
+            {"name": "Vila Bela", "level": 2, "x": 750, "y": 340},
+            
+            # Parte inferior (Pantanal)
+            {"name": "Pantanal Norte", "level": 1, "x": 300, "y": 350},
+            {"name": "Pantanal Sul", "level": 2, "x": 400, "y": 400},
+            {"name": "Porto de Cáceres", "level": 3, "x": 180, "y": 380},
+            {"name": "Corumbá", "level": 4, "x": 580, "y": 420},
+        ]
+        
+        # Criar botões para cada local
+        for location in locations:
+            map_button = MapButton(
+                location["name"], 
+                location["level"], 
+                location["x"], 
+                location["y"], 
+                self.map_area
+            )
+            map_button.location_clicked.connect(self.on_location_selected)
+            
+            # Aplicar fonte personalizada aos botões do mapa
+            if self.font_manager:
+                button_font = self.font_manager.get_font("botoes", size=12, bold=True)
+                map_button.setFont(button_font)
+        
+        # Adicionar algumas decorações (rios, florestas) como labels
+        self.add_map_decorations()
+    
+    def add_map_decorations(self):
+        """Adicionar elementos decorativos ao mapa"""
+        
+        # Rio (linha azul ondulada)
+        river_label = QLabel(self.map_area)
+        river_label.setGeometry(50, 300, 400, 20)
+        river_label.setStyleSheet("""
+            QLabel {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #1E90FF, stop:0.5 #87CEEB, stop:1 #1E90FF);
+                border-radius: 10px;
+                border: 2px solid #0000CD;
+            }
+        """)
+        
+        # Outro rio
+        river_label2 = QLabel(self.map_area)
+        river_label2.setGeometry(500, 320, 350, 20)
+        river_label2.setStyleSheet("""
+            QLabel {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #1E90FF, stop:0.5 #87CEEB, stop:1 #1E90FF);
+                border-radius: 10px;
+                border: 2px solid #0000CD;
+            }
+        """)
+        
+        # Legenda
+        legend = QLabel("🗺️ Clique nos círculos para explorar os locais!", self.map_area)
+        legend.setGeometry(20, 20, 400, 30)
+        
+        if self.font_manager:
+            legend_font = self.font_manager.get_font("narração", size=14)
+            legend.setFont(legend_font)
+        
+        legend.setStyleSheet("""
+            QLabel {
+                background: rgba(139, 69, 19, 0.9);
+                color: #FFD700;
+                padding: 8px;
+                border-radius: 8px;
+                border: 2px solid #FFD700;
+            }
+        """)
+    
+    def on_location_selected(self, location_name: str, level: int):
+        """Callback quando um local é selecionado"""
+        print(f"🗺️ Local selecionado: {location_name} (Nível {level})")
+        
+        # Aqui você pode implementar a lógica para cada local
+        # Por exemplo, abrir uma nova tela de fase ou mostrar informações
+        
+        # Exemplo de feedback visual
+        self.show_location_info(location_name, level)
+    
+    def show_location_info(self, location_name: str, level: int):
+        """Mostrar informações sobre o local selecionado"""
+        
+        # Criar popup de informação (simplificado)
+        info_label = QLabel(f"📍 {location_name}\n🎯 Nível: {level}\n🎮 Clique para jogar!", self.map_area)
+        info_label.setGeometry(400, 200, 200, 100)
+        
+        if self.font_manager:
+            info_font = self.font_manager.get_font("narração", size=12)
+            info_label.setFont(info_font)
+        
+        info_label.setStyleSheet("""
+            QLabel {
+                background: rgba(0, 0, 0, 0.8);
+                color: #FFD700;
+                padding: 10px;
+                border-radius: 10px;
+                border: 2px solid #FFD700;
+                text-align: center;
+            }
+        """)
+        
+        info_label.show()
+        
+        # Auto-ocultar após 3 segundos
+        QTimer.singleShot(3000, info_label.hide)
+
+class GameManager(QMainWindow):
+
+    
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Raízes Ocultas")
+        self.setFixedSize(1000, 700)
+        
+        # Widget com stack para trocar telas
+        self.stacked_widget = QStackedWidget()
+        self.setCentralWidget(self.stacked_widget)
+        
+        # Inicializar gerenciador de fontes
+        self.font_manager = FontManager()
+        self.load_fonts()
+        
+        # Criar e adicionar telas
+        self.prologue_screen = PrologoRPG(self.show_map)
+        self.map_screen = MapScreen(self.font_manager)
+        
+        self.stacked_widget.addWidget(self.prologue_screen)
+        self.stacked_widget.addWidget(self.map_screen)
+        
+        # Conectar botões
+        self.map_screen.back_button.clicked.connect(self.show_prologue)
+        self.map_screen.skip_button.clicked.connect(self.start_game)  # Conectar ao método correto
+        
+        # Começar com o prólogo
+        self.show_prologue()
+    
+    def load_fonts(self):
+        """Carregar fontes do jogo"""
+        font_paths = {
+            "titulo": "assets/fonts/Ghost theory 2.ttf",
+            "narração": "assets/fonts/White Storm.otf",
+            "botoes": "assets/fonts/firstorder.ttf",
+            "dialogo": "assets/fonts/AnalogWhispers.ttf",
+        }
+        
+        for font_name, font_path in font_paths.items():
+            self.font_manager.load_font(font_path, font_name)
+    
+    def show_prologue(self):
+        """Mostrar tela do prólogo"""
+        self.stacked_widget.setCurrentWidget(self.prologue_screen)
+        self.prologue_screen.start_prologue()
+    
+    def show_map(self):
+        """Mostrar tela do mapa"""
+        print("🗺️ Abrindo mapa...")
+        self.stacked_widget.setCurrentWidget(self.map_screen)
+    
+    def start_game(self):
+        """Iniciar o jogo propriamente dito"""
+        print("🎮 Iniciando o jogo...")
+        # Aqui você pode adicionar a lógica para iniciar o jogo
+        # Por exemplo, ir para a primeira fase ou mostrar menu principal
+
+class BubbleWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.bubble_color = QColor(240, 240, 240, 230)
+        self.border_color = QColor(100, 100, 100)
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Desenhar o bubble principal
+        rect = self.rect().adjusted(10, 10, -10, -40)
+        painter.setBrush(self.bubble_color)
+        painter.setPen(self.border_color)
+        painter.drawRoundedRect(rect, 20, 20)
+        
+        # Desenhar a "cauda" do bubble apontando para cima
+        tail_points = [
+            rect.center().x() - 15, rect.top(),
+            rect.center().x() + 15, rect.top(),
+            rect.center().x(), rect.top() - 20
+        ]
+        
+        painter.drawPolygon([
+            rect.center() + QRect(-15, -rect.height()//2, 0, 0).topLeft(),
+            rect.center() + QRect(15, -rect.height()//2, 0, 0).topLeft(),
+            rect.center() + QRect(0, -rect.height()//2 - 20, 0, 0).topLeft()
+        ])
 
 class TypewriterLabel(QLabel):
     typing_finished = pyqtSignal()
@@ -153,35 +579,6 @@ class TypewriterLabel(QLabel):
             self.setText(self.current_text)
             self.typing_finished.emit()
 
-class BubbleWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.bubble_color = QColor(240, 240, 240, 230)
-        self.border_color = QColor(100, 100, 100)
-        
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        # Desenhar o bubble principal
-        rect = self.rect().adjusted(10, 10, -10, -40)
-        painter.setBrush(self.bubble_color)
-        painter.setPen(self.border_color)
-        painter.drawRoundedRect(rect, 20, 20)
-        
-        # Desenhar a "cauda" do bubble apontando para cima
-        tail_points = [
-            rect.center().x() - 15, rect.top(),
-            rect.center().x() + 15, rect.top(),
-            rect.center().x(), rect.top() - 20
-        ]
-        
-        painter.drawPolygon([
-            rect.center() + QRect(-15, -rect.height()//2, 0, 0).topLeft(),
-            rect.center() + QRect(15, -rect.height()//2, 0, 0).topLeft(),
-            rect.center() + QRect(0, -rect.height()//2 - 20, 0, 0).topLeft()
-        ])
-
 class PrologoRPG(QMainWindow):
     
     def __init__(self, on_finish_callback=None):
@@ -191,11 +588,8 @@ class PrologoRPG(QMainWindow):
         
         print("🚀 Iniciando Prólogo RPG...")
         
-        # Inicializar gerenciador de fontes
+        # Inicializar gerenciador de fontes (será passado pelo GameManager)
         self.font_manager = FontManager()
-        
-        # Debug: mostrar algumas fontes do sistema
-        self.font_manager.list_system_fonts()
         
         # Carregar fontes personalizadas
         self.load_custom_fonts()
@@ -235,8 +629,8 @@ class PrologoRPG(QMainWindow):
         
         # Defina aqui os caminhos para suas fontes
         font_paths = {
-            "titulo": "assets/fonts/Gameplay.ttf",          # Para título do jogo
-            "narração": "assets/fonts/evanescent.ttf",      # Para texto de narração
+            "titulo": "assets/fonts/Ghost theory 2.ttf",          # Para título do jogo
+            "narração": "assets/fonts/White Storm.otf",      # Para texto de narração
             "botoes": "assets/fonts/firstorder.ttf",        # Para texto dos botões
             "dialogo": "assets/fonts/AnalogWhispers.ttf",   # Para diálogos de personagens
         }
@@ -247,24 +641,6 @@ class PrologoRPG(QMainWindow):
         
         print(f"🎯 Fontes carregadas: {list(self.font_manager.loaded_fonts.keys())}")
         
-        # Teste adicional: tentar carregar manualmente se não funcionou
-        if not self.font_manager.loaded_fonts:
-            print("🔄 Tentando carregamento manual...")
-            manual_font_path = "assets/fonts/Elementary_Gothic_Bookhand.ttf"
-            if os.path.exists(manual_font_path):
-                print(f"📁 Arquivo existe: {manual_font_path}")
-                # Teste direto com QFontDatabase
-                font_id = QFontDatabase.addApplicationFont(manual_font_path)
-                print(f"🆔 Font ID retornado: {font_id}")
-                if font_id != -1:
-                    families = QFontDatabase.applicationFontFamilies(font_id)
-                    print(f"👨‍👩‍👧‍👦 Famílias encontradas: {families}")
-                    if families:
-                        self.font_manager.loaded_fonts["manual"] = families[0]
-                        print(f"✅ Fonte carregada manualmente: {families[0]}")
-            else:
-                print(f"❌ Arquivo não existe: {manual_font_path}")
-                
         # Lista final de fontes carregadas
         print(f"📚 RESUMO - Fontes finais carregadas:")
         for key, family in self.font_manager.loaded_fonts.items():
@@ -301,7 +677,7 @@ class PrologoRPG(QMainWindow):
         title_layout = QHBoxLayout()
         title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        self.title_label = QLabel("Raízes Ocultas")
+        self.title_label = QLabel("Raizes Ocultas")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         # Aplicar fonte personalizada ao título
@@ -353,6 +729,7 @@ class PrologoRPG(QMainWindow):
                 Qt.TransformationMode.SmoothTransformation
             )
             self.character_image.setPixmap(pixmap)
+
         else:
             # Placeholder se não encontrar a imagem
             self.character_image.setText("🧙‍♂️")
@@ -388,7 +765,7 @@ class PrologoRPG(QMainWindow):
         self.text_label.setWordWrap(True)
         
         # Aplicar fonte personalizada ao texto de narração
-        narration_font = self.font_manager.get_font("narração", size=18, bold=False)  # Removendo bold para testar
+        narration_font = self.font_manager.get_font("narração", size=22, bold=False)
         self.text_label.setFont(narration_font)
         print(f"📝 Fonte da narração aplicada: {narration_font.family()}")
         
@@ -453,6 +830,46 @@ class PrologoRPG(QMainWindow):
         button_layout.addSpacing(50)
         
         main_layout.addLayout(button_layout)
+        
+        # === BOTÃO PULAR ===
+        skip_layout = QHBoxLayout()
+        skip_layout.addStretch()
+        
+        self.skip_button = QPushButton("⏭️ Pular")
+        self.skip_button.setFixedSize(100, 35)
+        self.skip_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        # Aplicar fonte personalizada ao botão pular
+        skip_font = self.font_manager.get_font("botoes", size=12, bold=True)
+        self.skip_button.setFont(skip_font)
+        
+        self.skip_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #696969, stop:1 #2F2F2F);
+                color: #E0E0E0;
+                border: 2px solid #808080;
+                border-radius: 17px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #808080, stop:1 #404040);
+                color: #FFFFFF;
+                transform: translateY(-1px);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #505050, stop:1 #1F1F1F);
+            }
+        """)
+        
+        self.skip_button.clicked.connect(self.skip_prologue)
+        
+        skip_layout.addWidget(self.skip_button)
+        skip_layout.addSpacing(30)
+        
+        main_layout.addLayout(skip_layout)
         main_layout.addStretch()
         
     def setup_animations(self):
@@ -500,8 +917,93 @@ class PrologoRPG(QMainWindow):
             # Próximo texto
             QTimer.singleShot(500, self.show_first_text)
         else:
-            # Fim do prólogo
-            self.finish_prologue()
+            # Fim do prólogo - adicionar botão "Começar"
+            self.show_start_button()
+    
+    def show_start_button(self):
+        """Mostrar botão para começar o jogo"""
+        # Esconder o bubble de texto
+        self.bubble.hide()
+        
+        # Criar botão "Começar"
+        self.start_button = QPushButton("🎮 Começar Aventura")
+        self.start_button.setFixedSize(250, 60)
+        self.start_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        # Aplicar fonte personalizada ao botão
+        start_font = self.font_manager.get_font("botoes", size=18, bold=True)
+        self.start_button.setFont(start_font)
+        
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FFD700, stop:1 #FFA500);
+                color: #8B4513;
+                border: 4px solid #8B4513;
+                border-radius: 30px;
+                padding: 15px;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            }
+            QPushButton:hover {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FFFF00, stop:1 #FFD700);
+                transform: translateY(-3px);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FFA500, stop:1 #FF8C00);
+                transform: translateY(0px);
+            }
+        """)
+        
+        self.start_button.clicked.connect(self.start_game)
+        
+        # Posicionar o botão no centro da tela
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(self.start_button)
+        button_layout.addStretch()
+        
+        # Adicionar ao layout principal
+        main_layout = self.centralWidget().layout()
+        main_layout.addLayout(button_layout)
+        
+        # Animação de aparição do botão
+        self.start_button_fade = QGraphicsOpacityEffect()
+        self.start_button.setGraphicsEffect(self.start_button_fade)
+        
+        self.start_button_animation = QPropertyAnimation(self.start_button_fade, b"opacity")
+        self.start_button_animation.setDuration(1000)
+        self.start_button_animation.setStartValue(0.0)
+        self.start_button_animation.setEndValue(1.0)
+        self.start_button_animation.start()
+    
+    def skip_prologue(self):
+        """Pular o prólogo e ir direto para o mapa"""
+        print("⏭️ Pulando prólogo...")
+        
+        # Parar qualquer animação/timer ativo
+        if hasattr(self, 'timer') and self.timer.isActive():
+            self.timer.stop()
+        
+        if hasattr(self, 'fade_animation') and self.fade_animation.state() == QPropertyAnimation.State.Running:
+            self.fade_animation.stop()
+        
+        if hasattr(self, 'button_animation') and self.button_animation.state() == QPropertyAnimation.State.Running:
+            self.button_animation.stop()
+        
+        # Ir direto para o mapa
+        if self.on_finish_callback:
+            self.on_finish_callback()
+        else:
+            self.close()
+    
+    def start_game(self):
+        """Iniciar o jogo (ir para o mapa)"""
+        print("🎮 Iniciando o jogo...")
+        if self.on_finish_callback:
+            self.on_finish_callback()
     
     def finish_prologue(self):
         print("🏁 Prólogo finalizado!")
@@ -521,7 +1023,9 @@ class PrologoRPG(QMainWindow):
             else:
                 self.text_label.skip_typing()
         elif event.key() == Qt.Key.Key_Escape:
-            self.finish_prologue()
+            self.skip_prologue()  # ESC agora pula o prólogo
+        elif event.key() == Qt.Key.Key_S:
+            self.skip_prologue()  # Tecla S para pular
 
 # Função para usar em outros módulos
 def show_prologue(parent=None, on_finish=None):
@@ -534,12 +1038,8 @@ def show_prologue(parent=None, on_finish=None):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    def on_prologue_finish():
-        print("Prólogo finalizado!")
-        app.quit()
-    
-    prologue = PrologoRPG(on_prologue_finish)
-    prologue.show()
-    prologue.start_prologue()
+    # Usar o GameManager para controlar as telas
+    game = GameManager()
+    game.show()
     
     sys.exit(app.exec())
