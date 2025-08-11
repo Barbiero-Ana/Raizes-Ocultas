@@ -92,6 +92,18 @@ class FontManager:
         if self.debug_mode:
             print(f"   🔧 Fonte criada: {font.family()}, {font.pointSize()}px")
             print(f"   ⚡ Fonte exata disponível: {font.exactMatch()}")
+            
+            # Verificação adicional: testar se a fonte está realmente disponível
+            available_families = QFontDatabase.families()
+            font_available_in_system = font_family in available_families
+            print(f"   🖥️ Fonte disponível no sistema: {font_available_in_system}")
+            
+            if not font_available_in_system and font_family != "Arial":
+                print(f"   🔄 Forçando carregamento da fonte novamente...")
+                # Tentar carregar novamente se não estiver disponível
+                test_font = QFont()
+                test_font.setFamily(font_family)
+                print(f"   🧪 Teste de família: {test_font.family()}")
         
         return font
     
@@ -223,10 +235,10 @@ class PrologoRPG(QMainWindow):
         
         # Defina aqui os caminhos para suas fontes
         font_paths = {
-            "titulo": "assets/fonts/Ghost theory 2.ttf",          # Para título do jogo
-            "narração": "assets/fonts/Ghost theory 2.ttf",      # Usando a mesma fonte para teste
-            "botoes": "assets/fonts/Ghost theory 2.ttf",          # Usando a mesma fonte para teste
-            "dialogo": "assets/fonts/Ghost theory 2.ttf",        # Usando a mesma fonte para teste
+            "titulo": "assets/fonts/Gameplay.ttf",          # Para título do jogo
+            "narração": "assets/fonts/evanescent.ttf",      # Para texto de narração
+            "botoes": "assets/fonts/firstorder.ttf",        # Para texto dos botões
+            "dialogo": "assets/fonts/AnalogWhispers.ttf",   # Para diálogos de personagens
         }
         
         # Carregar cada fonte (se existir)
@@ -234,6 +246,29 @@ class PrologoRPG(QMainWindow):
             self.font_manager.load_font(font_path, font_name)
         
         print(f"🎯 Fontes carregadas: {list(self.font_manager.loaded_fonts.keys())}")
+        
+        # Teste adicional: tentar carregar manualmente se não funcionou
+        if not self.font_manager.loaded_fonts:
+            print("🔄 Tentando carregamento manual...")
+            manual_font_path = "assets/fonts/Elementary_Gothic_Bookhand.ttf"
+            if os.path.exists(manual_font_path):
+                print(f"📁 Arquivo existe: {manual_font_path}")
+                # Teste direto com QFontDatabase
+                font_id = QFontDatabase.addApplicationFont(manual_font_path)
+                print(f"🆔 Font ID retornado: {font_id}")
+                if font_id != -1:
+                    families = QFontDatabase.applicationFontFamilies(font_id)
+                    print(f"👨‍👩‍👧‍👦 Famílias encontradas: {families}")
+                    if families:
+                        self.font_manager.loaded_fonts["manual"] = families[0]
+                        print(f"✅ Fonte carregada manualmente: {families[0]}")
+            else:
+                print(f"❌ Arquivo não existe: {manual_font_path}")
+                
+        # Lista final de fontes carregadas
+        print(f"📚 RESUMO - Fontes finais carregadas:")
+        for key, family in self.font_manager.loaded_fonts.items():
+            print(f"   🔑 {key} -> {family}")
         
     def setup_ui(self):
         self.setWindowTitle("Raízes Ocultas - Prólogo")
