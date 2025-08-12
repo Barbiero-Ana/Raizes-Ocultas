@@ -104,7 +104,7 @@ class FontManager:
                 print(f"   ... e mais {len(families) - 10} fontes")
 
 class MapButton(QPushButton):
-    location_clicked = pyqtSignal(str, int)  # nome do local, nível
+    location_clicked = pyqtSignal(str, int)  
     
     def __init__(self, location_name: str, level: int, x: int, y: int, parent=None):
         super().__init__(parent)
@@ -113,7 +113,6 @@ class MapButton(QPushButton):
         self.setFixedSize(40, 40)
         self.move(x, y)
         
-        # Estilo do botão do mapa
         self.setStyleSheet(f"""
             QPushButton {{
                 background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
@@ -148,45 +147,38 @@ class MapScreen(QMainWindow):
         super().__init__(parent)
         self.font_manager = font_manager
         self.setup_map_ui()
-        
-    def setup_map_ui(self):
-        self.setWindowTitle("Raízes Ocultas - Mapa")
-        self.setFixedSize(1000, 700)
-        
-        # Widget principal
-        main_widget = QWidget()
-        self.setCentralWidget(main_widget)
-        
-        # Layout principal
-        main_layout = QVBoxLayout(main_widget)
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # === FUNDO DO MAPA ===
-        background_path = "assets/ScreenElements/gamescreen/Map/game-map-2.png"
+
+    def setup_background(self, main_widget):
+        background_path = "assets/ScreenElements/gamescreen/Map/game-map-3.png"
         
         print(f"🔍 Verificando imagem de fundo:")
         print(f"   📁 Caminho: {background_path}")
         print(f"   ✅ Arquivo existe: {os.path.exists(background_path)}")
         
-        if os.path.exists(background_path):
-            print(f"✅ Carregando imagem de fundo: {background_path}")
-            # Converter caminho para formato adequado no CSS
-            background_path_css = background_path.replace("\\", "/")
+        if os.path.exists(background_path):            
+            original_pixmap = QPixmap(background_path)
+            self.background_label = QLabel(main_widget)
+            self.background_label.setGeometry(0, 0, 1000, 700)
+            self.background_label.lower()
+            scaled_pixmap = original_pixmap.scaled(
+                1000, 700, 
+                Qt.AspectRatioMode.IgnoreAspectRatio,  
+                Qt.TransformationMode.SmoothTransformation  
+            )
             
-            # Configurar fundo usando CSS
-            main_widget.setStyleSheet(f"""
-                QWidget {{
-                    background-image: url({background_path_css});
-                    background-repeat: no-repeat;
-                    background-position: center;
-                    background-size: cover;
+            self.background_label.setPixmap(scaled_pixmap)
+            
+            # Estilo apenas para a borda do widget principal
+            main_widget.setStyleSheet("""
+                QWidget {
                     border: 10px solid #8B4513;
                     border-radius: 15px;
-                }}
+                    background: transparent;
+                }
             """)
+            
+            return True
         else:
-            # Fallback: fundo gradiente
             print(f"❌ Imagem não encontrada: {background_path}")
             main_widget.setStyleSheet("""
                 QWidget {
@@ -196,58 +188,34 @@ class MapScreen(QMainWindow):
                     border-radius: 15px;
                 }
             """)
+            return False
+            
+    def setup_map_ui(self):
+        self.setWindowTitle("Raízes Ocultas - Mapa")
+        self.setFixedSize(1000, 700)
         
-        # === TÍTULO DO MAPA ===
-        title_layout = QHBoxLayout()
-        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Widget principal
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
         
-        self.map_title = QLabel("RAÍZES OCULTAS")
-        self.map_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # === CRIAR ÁREA DO MAPA (importante para os botões dos locais) ===
+        self.map_area = main_widget  # O widget principal serve como área do mapa
         
-
-        if self.font_manager:
-            title_font = self.font_manager.get_font("titulo", size=36, bold=True)
-            self.map_title.setFont(title_font)
+        # Layout principal
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
-        self.map_title.setStyleSheet("""
-            QLabel {
-                color: #FFD700;
-                margin: 10px;
-                padding: 15px;
-                background: rgba(139, 69, 19, 0.8);
-                border-radius: 15px;
-                border: 3px solid #FFD700;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            }
-        """)
+        # === FUNDO DO MAPA ===
+        self.setup_background(main_widget)
         
-        title_layout.addWidget(self.map_title)
-        main_layout.addLayout(title_layout)
-        
-        # === ÁREA DO MAPA INTERATIVO ===
-        self.map_area = QWidget()
-        self.map_area.setFixedSize(960, 540)
-        self.map_area.setStyleSheet("""
-            QWidget {
-                background: rgba(34, 139, 34, 0.3);  /* Fundo semi-transparente para não esconder a imagem */
-                border: 5px solid #8B4513;
-                border-radius: 10px;
-                margin: 10px;
-            }
-        """)
-        
-
+        # === CRIAR LOCAIS NO MAPA (círculos amarelos) ===
         self.create_map_locations()
         
-
-        map_container = QHBoxLayout()
-        map_container.addStretch()
-        map_container.addWidget(self.map_area)
-        map_container.addStretch()
+        # === BOTÕES DO MAPA ===
+        # Adicionar mais espaço antes dos botões para empurrá-los para baixo
+        main_layout.addStretch(3)  # Adiciona espaço flexível maior
         
-        main_layout.addLayout(map_container)
-        
-        # === BOTÕES DO MAPA 
         map_buttons_layout = QHBoxLayout()
         map_buttons_layout.addStretch()
         
@@ -310,40 +278,38 @@ class MapScreen(QMainWindow):
             }
         """)
         
-
         map_buttons_layout.addWidget(self.skip_button)
         map_buttons_layout.addStretch()
         
         main_layout.addLayout(map_buttons_layout)
-        main_layout.addStretch()
+        
+        # Adicionar um pequeno espaço no final (margem inferior)
+        main_layout.addSpacing(20)
         
     def create_map_locations(self):
 
         locations = [
             # Lado esquerdo (aldeias indígenas)
-            {"name": "Aldeia Bororo", "level": 1, "x": 180, "y": 100},
-            {"name": "Aldeia Xavante", "level": 2, "x": 120, "y": 140},
-            {"name": "Aldeia Karajá", "level": 3, "x": 160, "y": 200},
-            {"name": "Aldeia Terena", "level": 4, "x": 100, "y": 260},
+            {"name": "Aldeia Bororo", "level": 1, "x": 225, "y": 240},
+            {"name": "Aldeia Xavante", "level": 2, "x": 180, "y": 230},
+            {"name": "Aldeia Karajá", "level": 3, "x": 160, "y": 300},
+            {"name": "Aldeia Terena", "level": 4, "x": 180, "y": 370},
             
-            # Centro (locais especiais)
-            {"name": "Centro Geodésico", "level": 1, "x": 450, "y": 180},
-            {"name": "Chapada dos Guimarães", "level": 2, "x": 420, "y": 240},
+            # lado esquerdo inferior
+            {"name": "Centro Geodésico", "level": 1, "x": 257, "y": 480},
+            {"name": "Chapada dos Guimarães", "level": 2, "x": 310, "y": 515},
+            {"name": "Porto de Cáceres", "level": 3, "x": 115, "y": 492},
+            {"name": "Vila Bela", "level": 4, "x": 170, "y": 503},
             
             # Lado direito (castelo e vilas)
-            {"name": "Castelo dos Bandeirantes", "level": 4, "x": 720, "y": 120},
-            {"name": "Vila dos Quilombolas", "level": 1, "x": 680, "y": 200},
-            {"name": "Povoado Pantaneiro", "level": 3, "x": 650, "y": 280},
-            {"name": "Vila Bela", "level": 2, "x": 750, "y": 340},
-            
-            # Parte inferior (Pantanal)
-            {"name": "Pantanal Norte", "level": 1, "x": 300, "y": 350},
-            {"name": "Pantanal Sul", "level": 2, "x": 400, "y": 400},
-            {"name": "Porto de Cáceres", "level": 3, "x": 180, "y": 380},
-            {"name": "Corumbá", "level": 4, "x": 580, "y": 420},
+            {"name": "Castelo dos Bandeirantes", "level": 1, "x": 810, "y": 250},            
+            # lado direito inferior
+            {"name": "Pantanal Norte", "level": 1, "x": 725, "y": 572},
+            {"name": "Pantanal Sul", "level": 2, "x": 788, "y": 543},
+            {"name": "Pantanal Ancestral", "level": 3, "x": 840, "y": 500},
+            {"name": "Corumbá", "level": 4, "x": 758, "y": 437},
         ]
         
-        # Criar botões para cada local
         for location in locations:
             map_button = MapButton(
                 location["name"], 
@@ -354,119 +320,63 @@ class MapScreen(QMainWindow):
             )
             map_button.location_clicked.connect(self.on_location_selected)
             
-            # Aplicar fonte personalizada aos botões do mapa
             if self.font_manager:
                 button_font = self.font_manager.get_font("botoes", size=12, bold=True)
                 map_button.setFont(button_font)
-        
-        # Adicionar algumas decorações (rios, florestas) como labels
-        self.add_map_decorations()
-    
-    def add_map_decorations(self):
-        # Rio (linha azul ondulada)
-        river_label = QLabel(self.map_area)
-        river_label.setGeometry(50, 300, 400, 20)
-        river_label.setStyleSheet("""
-            QLabel {
-                background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #1E90FF, stop:0.5 #87CEEB, stop:1 #1E90FF);
-                border-radius: 10px;
-                border: 2px solid #0000CD;
-            }
-        """)
-        
-        # Outro rio
-        river_label2 = QLabel(self.map_area)
-        river_label2.setGeometry(500, 320, 350, 20)
-        river_label2.setStyleSheet("""
-            QLabel {
-                background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #1E90FF, stop:0.5 #87CEEB, stop:1 #1E90FF);
-                border-radius: 10px;
-                border: 2px solid #0000CD;
-            }
-        """)
-        
-        # Legenda
-        legend = QLabel("🗺️ Clique nos círculos para explorar os locais!", self.map_area)
-        legend.setGeometry(20, 20, 400, 30)
-        
-        if self.font_manager:
-            legend_font = self.font_manager.get_font("narração", size=14)
-            legend.setFont(legend_font)
-        
-        legend.setStyleSheet("""
-            QLabel {
-                background: rgba(139, 69, 19, 0.9);
-                color: #FFD700;
-                padding: 8px;
-                border-radius: 8px;
-                border: 2px solid #FFD700;
-            }
-        """)
     
     def on_location_selected(self, location_name: str, level: int):
-
-        print(f"🗺️ Local selecionado: {location_name} (Nível {level})")
-        
-
+        print(f"🗺️ Local selecionado: {location_name} (Nível {level})")        
         self.show_location_info(location_name, level)
     
     def show_location_info(self, location_name: str, level: int):
-
-        
-        # Criar popup de informação (simplificado)
-        info_label = QLabel(f"📍 {location_name}\n🎯 Nível: {level}\n🎮 Clique para jogar!", self.map_area)
-        info_label.setGeometry(400, 200, 200, 100)
+        if hasattr(self, 'info_popup') and self.info_popup:
+            self.info_popup.hide()
+            self.info_popup.deleteLater()        
+        self.info_popup = QLabel(f"📍 {location_name}\n🎯 Nível: {level}\n🎮 Local disponível!", self.map_area)
+        self.info_popup.setGeometry(350, 150, 300, 120)
+        self.info_popup.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         if self.font_manager:
-            info_font = self.font_manager.get_font("narração", size=12)
-            info_label.setFont(info_font)
+            info_font = self.font_manager.get_font("narração", size=14, bold=True)
+            self.info_popup.setFont(info_font)
         
-        info_label.setStyleSheet("""
+        self.info_popup.setStyleSheet("""
             QLabel {
-                background: rgba(0, 0, 0, 0.8);
+                background: rgba(139, 69, 19, 0.95);
                 color: #FFD700;
-                padding: 10px;
-                border-radius: 10px;
-                border: 2px solid #FFD700;
+                padding: 15px;
+                border-radius: 15px;
+                border: 3px solid #FFD700;
                 text-align: center;
+                font-weight: bold;
             }
         """)
         
-        info_label.show()
-        
-        # Auto-ocultar após 3 segundos
-        QTimer.singleShot(3000, info_label.hide)
+        self.info_popup.show()
+        # Auto-ocultar -> 3000 = 3 segundos (presta atenção nisso ANAAAAAAAAA)
+        QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
 
 class GameManager(QMainWindow):
-
-    
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Raízes Ocultas")
         self.setFixedSize(1000, 700)
         
-        # Widget com stack para trocar telas
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
         
-        # Inicializar gerenciador de fontes
         self.font_manager = FontManager()
         self.load_fonts()
         
-        # Criar e adicionar telas
         self.prologue_screen = PrologoRPG(self.show_map)
         self.map_screen = MapScreen(self.font_manager)
         
         self.stacked_widget.addWidget(self.prologue_screen)
         self.stacked_widget.addWidget(self.map_screen)
         
-        # Conectar botões
         self.map_screen.back_button.clicked.connect(self.show_prologue)
         self.map_screen.skip_button.clicked.connect(self.start_game)  # Conectar ao método correto
         
-        # Começar com o prólogo
         self.show_prologue()
     
     def load_fonts(self):
@@ -474,7 +384,7 @@ class GameManager(QMainWindow):
             "titulo": "assets/fonts/Ghost theory 2.ttf",
             "narração": "assets/fonts/White Storm.otf",
             "botoes": "assets/fonts/firstorder.ttf",
-            "dialogo": "assets/fonts/AnalogWhispers.ttf",
+            "dialogo": "assets/fonts/Elementary_Gothic_Bookhand.ttf",
         }
         
         for font_name, font_path in font_paths.items():
@@ -490,8 +400,6 @@ class GameManager(QMainWindow):
     
     def start_game(self):
         print("🎮 Iniciando o jogo...")
-        # Aqui você pode adicionar a lógica para iniciar o jogo
-        # Por exemplo, ir para a primeira fase ou mostrar menu principal
 
 class BubbleWidget(QWidget):
     def __init__(self, parent=None):
@@ -611,7 +519,7 @@ class PrologoRPG(QMainWindow):
             "titulo": "assets/fonts/Ghost theory 2.ttf",          # Para título do jogo
             "narração": "assets/fonts/White Storm.otf",      # Para texto de narração
             "botoes": "assets/fonts/firstorder.ttf",        # Para texto dos botões
-            "dialogo": "assets/fonts/AnalogWhispers.ttf",   # Para diálogos de personagens
+            "dialogo": "assets/fonts/Elementary_Gothic_Bookhand.ttf",   # Para diálogos de personagens
         }
         
         # Carregar cada fonte (se existir)
