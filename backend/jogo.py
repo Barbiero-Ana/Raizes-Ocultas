@@ -13,7 +13,7 @@ nome_banco = "raizes_ocultas.db"
 caminho_completo = os.path.join(pasta_db, nome_banco)
 
 class QuizGame:
-    def __init__(self, root, nivel="1-1"):
+    def __init__(self, root, nivel="1-1",id_turma = None):
         self.root = root
         self.root.title("Quiz Game")
         self.root.geometry("600x400")
@@ -26,6 +26,7 @@ class QuizGame:
         self.respostas_corretas_consecutivas = 0
         self.tempo_respostas = []  # Armazena o tempo gasto em cada resposta
         self.bonus_disponivel = False
+        self.id_turma = id_turma  # Adicione esta linha
         
         # Parse do nível para obter dificuldade e classe
         self.dificuldade, self.classe = map(int, nivel.split('-'))
@@ -134,37 +135,19 @@ class QuizGame:
     def verificar_resposta(self, indice):
         self.root.after_cancel(self.timer)
         
-        # Obtém a letra da opção selecionada (A, B, C ou D)
-        letra_selecionada = ['A', 'B', 'C', 'D'][indice]
-        resposta_correta = self.perguntas[self.pergunta_atual]['resposta']
-        
-        if letra_selecionada == resposta_correta:
-            self.pontuacao += 1
-            messagebox.showinfo("Correto!", "Você acertou!")
-        else:
-            self.perde_vida("Resposta incorreta!")
-            return
-
-        self.pergunta_atual += 1
-        self.carregar_pergunta()
-
-    
-    def verificar_resposta(self, indice):
-        self.root.after_cancel(self.timer)
-        
-        # Calcula o tempo gasto para responder
         tempo_gasto = self.TEMPOS[self.pergunta_atual] - self.tempo_restante
-        self.tempo_respostas.append(tempo_gasto)
-        
         letra_selecionada = ['A', 'B', 'C', 'D'][indice]
         resposta_correta = self.perguntas[self.pergunta_atual]['resposta']
+        acertou = letra_selecionada == resposta_correta
         
-        if letra_selecionada == resposta_correta:
+        # Salva a resposta no banco de dados
+        self.salvar_resposta_turma(acertou, tempo_gasto)
+        
+        if acertou:
             self.pontuacao += 1
             self.respostas_corretas_consecutivas += 1
             mensagem = "Você acertou!"
             
-            # Verifica se o jogador merece um bônus
             if self.respostas_corretas_consecutivas >= 3 and tempo_gasto < (self.TEMPOS[self.pergunta_atual] / 2):
                 self.conceder_bonus()
                 mensagem += "\n\nVocê ganhou um bônus especial!"
@@ -175,6 +158,40 @@ class QuizGame:
             self.perde_vida("Resposta incorreta!")
             return
 
+        self.pergunta_atual += 1
+        self.carregar_pergunta()
+
+    def salvar_resposta_turma(self, acertou, tempo_gasto):
+        if not self.id_turma:
+            return
+            
+        try:
+            conn = sqlite3.connect(caminho_completo)
+            cursor = conn.cursor()
+            
+            # Obtém o ID da pergunta atual
+            cursor.execute("""
+                SELECT id_pergunta FROM Perguntas 
+                WHERE pergunta = ? AND classe_pergunta = ? AND dificuldade_pergunta = ?
+            """, (
+                self.perguntas[self.pergunta_atual]['pergunta'],
+                self.classe,
+                self.dificuldade
+            ))
+            
+            id_pergunta = cursor.fetchone()[0]
+            
+            # Insere ou ignora se já existir (devido à constraint UNIQUE)
+            cursor.execute("""
+                INSERT OR IGNORE INTO Dados_do_jogador 
+                (id_turma, id_pergunta, acertou, tempo_resposta)
+                VALUES (?, ?, ?, ?)
+            """, (self.id_turma, id_pergunta, int(acertou), tempo_gasto))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao salvar resposta: {e}")
         self.pergunta_atual += 1
         self.carregar_pergunta()
 

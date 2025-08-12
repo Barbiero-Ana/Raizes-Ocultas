@@ -115,3 +115,28 @@ class CadastrarTurma:
         cadastro = CadastrarTurma(id_usuario)
         return cadastro.cadastrar_turma(nome, quantidade, serie)
         
+    def get_estatisticas_turma(self, id_turma):
+        conn = sqlite3.connect("database/raizes_ocultas.db")
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_perguntas,
+                SUM(acertou) as acertos,
+                COUNT(*) - SUM(acertou) as erros,
+                AVG(tempo_resposta) as tempo_medio
+            FROM Dados_do_jogador
+            WHERE id_turma = ?
+        """, (id_turma,))
+        
+        resultado = cursor.fetchone()
+        conn.close()
+        
+        if resultado:
+            return {
+                'total': resultado[0],
+                'acertos': resultado[1],
+                'erros': resultado[2],
+                'tempo_medio': resultado[3] or 0
+            }
+        return None

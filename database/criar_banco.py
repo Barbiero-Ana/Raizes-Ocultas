@@ -99,15 +99,19 @@ class Database:
                 )
                 """)
                 #------------- salvar o progresso das Turmas-------
+                # Substitua a criação da tabela Dados_do_jogador por:
                 cursor.execute("""
-                CREATE TABLE IF NOT EXISTS Dados_do_jogador(
-                    id_progresso INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_turma INTEGER NOT NULL,
-                    id_boss INTEGER NOT NULL,
-                    flag_progresso BOOLEAN DEFAULT 0,
-                    FOREIGN KEY (id_turma) REFERENCES Turma(id_turma) ON DELETE CASCADE,
-                    FOREIGN KEY (id_boss) REFERENCES Boss(id_boss) ON DELETE CASCADE
-                )
+                    CREATE TABLE IF NOT EXISTS Dados_do_jogador(
+                        id_progresso INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_turma INTEGER NOT NULL,
+                        id_pergunta INTEGER NOT NULL,
+                        acertou BOOLEAN NOT NULL,  -- 1 para acerto, 0 para erro
+                        tempo_resposta INTEGER,     -- Tempo gasto para responder
+                        data_resposta TEXT DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY(id_turma) REFERENCES Turma(id_turma) ON DELETE CASCADE,
+                        FOREIGN KEY(id_pergunta) REFERENCES Perguntas(id_pergunta) ON DELETE CASCADE,
+                        UNIQUE(id_turma, id_pergunta)  -- Garante que uma turma não responda a mesma pergunta duas vezes
+                    )
                 """)
                 #------------  salvar as questões -----------------
                 cursor.execute("""

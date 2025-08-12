@@ -1,7 +1,8 @@
 # Crie um novo arquivo listar_turmas_screen.py
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPushButton, 
-    QScrollArea, QWidget, QMessageBox
+    QScrollArea, QWidget, QMessageBox,QHBoxLayout,QButtonGroup,
+    QRadioButton
 )
 from PyQt6.QtCore import Qt
 
@@ -11,13 +12,14 @@ class ListarTurmasDialog(QDialog):
         self.setWindowTitle("Minhas Turmas")
         self.setFixedSize(500, 400)
         self.id_usuario = id_usuario
+        self.turma_selecionada = None
         
         # Layout principal
         layout = QVBoxLayout()
         self.setLayout(layout)
         
         # Título
-        lbl_titulo = QLabel("Turmas Criadas")
+        lbl_titulo = QLabel("Selecione uma Turma para Jogar")
         lbl_titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
         lbl_titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_titulo)
@@ -35,10 +37,19 @@ class ListarTurmasDialog(QDialog):
         scroll.setWidget(scroll_content)
         layout.addWidget(scroll)
         
-        # Botão fechar
+        # Botões
+        btn_layout = QHBoxLayout()
+        
+        self.btn_selecionar = QPushButton("Selecionar Turma")
+        self.btn_selecionar.clicked.connect(self.selecionar_turma)
+        self.btn_selecionar.setEnabled(False)
+        btn_layout.addWidget(self.btn_selecionar)
+        
         btn_fechar = QPushButton("Fechar")
         btn_fechar.clicked.connect(self.close)
-        layout.addWidget(btn_fechar)
+        btn_layout.addWidget(btn_fechar)
+        
+        layout.addLayout(btn_layout)
     
     def carregar_turmas(self, layout):
         from backend.cadastrar_turma import CadastrarTurma
@@ -52,8 +63,11 @@ class ListarTurmasDialog(QDialog):
             layout.addWidget(lbl_vazio)
             return
         
+        self.radio_group = QButtonGroup(self)
+        
         for turma in turmas:
             turma_id, nome, quantidade, serie = turma
+            
             widget_turma = QWidget()
             widget_turma.setStyleSheet("""
                 QWidget {
@@ -64,12 +78,32 @@ class ListarTurmasDialog(QDialog):
                 }
             """)
             
-            turma_layout = QVBoxLayout(widget_turma)
+            turma_layout = QHBoxLayout(widget_turma)
             
-            lbl_nome = QLabel(f"<b>{nome}</b>")
-            lbl_detalhes = QLabel(f"Série: {serie} | Alunos: {quantidade}")
+            radio = QRadioButton()
+            radio.toggled.connect(lambda checked, tid=turma_id: self.turma_selecionada_handler(checked, tid))
+            self.radio_group.addButton(radio, turma_id)
             
+            lbl_nome = QLabel(f"<b>{nome}</b> - Série: {serie} | Alunos: {quantidade}")
+            
+            turma_layout.addWidget(radio)
             turma_layout.addWidget(lbl_nome)
-            turma_layout.addWidget(lbl_detalhes)
+            turma_layout.addStretch()
             
             layout.addWidget(widget_turma)
+    
+    def turma_selecionada_handler(self, checked, turma_id):
+        self.turma_selecionada = turma_id if checked else None
+        self.btn_selecionar.setEnabled(checked)
+    
+    def selecionar_turma(self):
+        if self.turma_selecionada:
+            self.accept()  # Fecha o diálogo com resultado positivo
+        else:
+            QMessageBox.warning(self, "Aviso", "Selecione uma turma para continuar")
+    
+    @staticmethod
+    def get_turma_selecionada(parent=None, id_usuario=None):
+        dialog = ListarTurmasDialog(parent, id_usuario)
+        result = dialog.exec()
+        return dialog.turma_selecionada if result == QDialog.DialogCode.Accepted else None
