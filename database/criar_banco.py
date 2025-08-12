@@ -2,7 +2,7 @@ import sqlite3
 from sqlite3 import Error
 import hashlib
 from datetime import datetime
-from backend.turma import Turma
+
 import os 
 
 class Database:
@@ -194,6 +194,7 @@ class Funcoes_DataBase:
     
     # Carregar a as turmas para selecionar 
     def carregar_turma(self,id_usuario):
+        from backend.turma import Turma
         cursor = self.conn.cursor()
 
         cursor.execute("SELECT * FROM Turma WHERE id_usuario ?",(id_usuario))
@@ -266,8 +267,9 @@ class Funcoes_DataBase:
         
     def inserir_perguntas_padrao(self):
         """Insere as perguntas padrão no banco de dados"""
-        perguntas_exemplo = [
-            # Ato I — Raízes Esquecidas (Cultura Indígena) -> consulte o documento na pasta de docs
+        todas_perguntas = [
+            # Ato I — O Chamado da Floresta (Mitologia e Povos Originários)
+            # Fase 1 – Início da Jornada
             {
                 'pergunta': 'Qual destes animais é sagrado para o povo Bororo?',
                 'classe_pergunta': 5,
@@ -289,6 +291,92 @@ class Funcoes_DataBase:
                 'resposta': 'B'
             },
             {
+                'pergunta': 'O que significa o termo "Xingu"?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Rio grande',
+                'opcao_b': 'Povo guerreiro',
+                'opcao_c': 'Terra fértil',
+                'opcao_d': 'Lugar sagrado',
+                'resposta': 'D'
+            },
+            # Fase 2 – Saberes da Terra
+            {
+                'pergunta': 'Que povo indígena habita o Parque Nacional do Xingu?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Guarani',
+                'opcao_b': 'Yanomami',
+                'opcao_c': 'Caiapó',
+                'opcao_d': 'Vários povos diferentes',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'Qual instrumento é tradicional em rituais indígenas mato-grossenses?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Violão',
+                'opcao_b': 'Flauta de taquara',
+                'opcao_c': 'Tambor',
+                'opcao_d': 'Pandeiro',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'O que representa o urucum na cultura ancestral?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Proteção espiritual',
+                'opcao_b': 'Fertilidade',
+                'opcao_c': 'Guerra',
+                'opcao_d': 'Colheita abundante',
+                'resposta': 'A'
+            },
+            # Fase 3 – O Espírito da Floresta
+            {
+                'pergunta': 'O que significa o uso de grafismos corporais nas culturas indígenas do Mato Grosso?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Status social',
+                'opcao_b': 'Proteção espiritual',
+                'opcao_c': 'Identidade cultural',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'Qual a função do pajé nas aldeias?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Líder político',
+                'opcao_b': 'Guardião do conhecimento espiritual',
+                'opcao_c': 'Caçador',
+                'opcao_d': 'Artista',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'Qual é o papel da oralidade na preservação da cultura indígena?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Transmitir conhecimentos entre gerações',
+                'opcao_b': 'Manter viva a língua nativa',
+                'opcao_c': 'Preservar histórias e tradições',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            # Fase 4 – Boss: O Guardião da Neblina
+            {
+                'pergunta': 'Como os povos originários interpretam o tempo e os ciclos naturais?',
+                'classe_pergunta': 5,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Como algo linear',
+                'opcao_b': 'Como um ciclo contínuo',
+                'opcao_c': 'Como algo controlado pelos deuses',
+                'opcao_d': 'Como algo aleatório',
+                'resposta': 'B'
+            },
+            
+            # Ato II — Caminhos Ancestrais (Quilombos, Danças e Resistência)
+            # Fase 1 – Batida dos Tambores
+            {
                 'pergunta': 'Qual dança é tradicional em festas de rua mato-grossenses?',
                 'classe_pergunta': 4,
                 'dificuldade_pergunta': 1,
@@ -298,6 +386,102 @@ class Funcoes_DataBase:
                 'opcao_d': 'Forró',
                 'resposta': 'B'
             },
+            {
+                'pergunta': 'O que é o cururu?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Um prato típico',
+                'opcao_b': 'Uma dança folclórica',
+                'opcao_c': 'Um instrumento musical',
+                'opcao_d': 'Um tipo de artesanato',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'Siriri é uma dança típica do estado? Sim ou não?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Sim',
+                'opcao_b': 'Não',
+                'opcao_c': '',
+                'opcao_d': '',
+                'resposta': 'A'
+            },
+            # Fase 2 – Cores e Ritmos Quilombolas
+            {
+                'pergunta': 'Que instrumentos são usados no siriri?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Violão e pandeiro',
+                'opcao_b': 'Tambor e reco-reco',
+                'opcao_c': 'Flauta e violino',
+                'opcao_d': 'Guitarra e baixo',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'Qual a origem da expressão "quilombo"?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Língua banto',
+                'opcao_b': 'Tupi-guarani',
+                'opcao_c': 'Português arcaico',
+                'opcao_d': 'Língua yorubá',
+                'resposta': 'A'
+            },
+            {
+                'pergunta': 'O que representa a Festa de São Benedito?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'A colheita',
+                'opcao_b': 'A resistência cultural afro-brasileira',
+                'opcao_c': 'O início do inverno',
+                'opcao_d': 'A fundação do estado',
+                'resposta': 'B'
+            },
+            # Fase 3 – A Voz da Ancestralidade
+            {
+                'pergunta': 'Qual a importância do congado para os povos afrodescendentes?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Celebração religiosa',
+                'opcao_b': 'Manutenção das tradições culturais',
+                'opcao_c': 'Resistência política',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'Como a musicalidade está presente nas manifestações quilombolas?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Como forma de oração',
+                'opcao_b': 'Como expressão cultural',
+                'opcao_c': 'Como registro histórico',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'Como a dança funciona como resistência cultural nos quilombos?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Preservando tradições africanas',
+                'opcao_b': 'Criando identidade coletiva',
+                'opcao_c': 'Transmitindo conhecimentos',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            # Fase 4 – Boss: A Mãe da Memória Quilombola
+            {
+                'pergunta': 'Quais os principais elementos culturais dos quilombos mato-grossenses?',
+                'classe_pergunta': 4,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Dança e música',
+                'opcao_b': 'Culinária',
+                'opcao_c': 'Religiosidade',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            
+            # Ato III — Ecos do Cerrado (Tradições e Natureza)
+            # Fase 1 – Caminho das Pedras Cantantes
             {
                 'pergunta': 'O que é rasqueado?',
                 'classe_pergunta': 3,
@@ -309,6 +493,102 @@ class Funcoes_DataBase:
                 'resposta': 'B'
             },
             {
+                'pergunta': 'Qual desses elementos está presente no cerrado?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Buriti',
+                'opcao_b': 'Araucária',
+                'opcao_c': 'Mangue',
+                'opcao_d': 'Cacto gigante',
+                'resposta': 'A'
+            },
+            {
+                'pergunta': 'Qual o bioma predominante no centro do estado?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Amazônia',
+                'opcao_b': 'Pantanal',
+                'opcao_c': 'Cerrado',
+                'opcao_d': 'Caatinga',
+                'resposta': 'C'
+            },
+            # Fase 2 – Mistérios da Serra
+            {
+                'pergunta': 'A Serra do Roncador é conhecida por quê?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Sua biodiversidade',
+                'opcao_b': 'Seus mistérios e lendas',
+                'opcao_c': 'Sua altura',
+                'opcao_d': 'Sua mineração',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'Qual lenda fala de um ser gigante que abre caminhos?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Mãe-do-Ouro',
+                'opcao_b': 'Saci-Pererê',
+                'opcao_c': 'Curupira',
+                'opcao_d': 'Anhangá',
+                'resposta': 'C'
+            },
+            {
+                'pergunta': 'O que é "botina de ouro" no folclore?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Um tesouro escondido',
+                'opcao_b': 'Uma lenda sobre um garimpeiro',
+                'opcao_c': 'Um tipo de calçado tradicional',
+                'opcao_d': 'Uma dança folclórica',
+                'resposta': 'B'
+            },
+            # Fase 3 – O Espantalho do Esquecimento
+            {
+                'pergunta': 'Qual a função da viola de cocho na cultura musical mato-grossense?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Acompanhamento de danças',
+                'opcao_b': 'Solos em festivais',
+                'opcao_c': 'Rituais religiosos',
+                'opcao_d': 'Educação musical',
+                'resposta': 'A'
+            },
+            {
+                'pergunta': 'Em que ocasiões o siriri e o cururu são tradicionalmente apresentados?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Festas juninas',
+                'opcao_b': 'Festas religiosas',
+                'opcao_c': 'Casamentos',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'O que diferencia o rasqueado mato-grossense de outros ritmos brasileiros?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Seu ritmo acelerado',
+                'opcao_b': 'A mistura de influências indígenas, africanas e europeias',
+                'opcao_c': 'O uso de instrumentos únicos',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            # Fase 4 – Boss: O Espantalho do Esquecimento
+            {
+                'pergunta': 'Como a oralidade e a música garantem a continuidade da identidade cultural do cerrado?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Transmitindo conhecimentos tradicionais',
+                'opcao_b': 'Preservando a língua local',
+                'opcao_c': 'Mantendo vivas as histórias e lendas',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            
+            # Ato IV — O Coração do Pantanal (Gastronomia, Água e Mistério)
+            # Fase 1 – Caminho das Águas
+            {
                 'pergunta': 'Qual prato é feito com peixe e muito comum na região?',
                 'classe_pergunta': 3,
                 'dificuldade_pergunta': 1,
@@ -317,11 +597,104 @@ class Funcoes_DataBase:
                 'opcao_c': 'Caldo de piranha',
                 'opcao_d': 'Todos os anteriores',
                 'resposta': 'D'
+            },
+            {
+                'pergunta': 'O que é mojica de pintado?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Um tipo de pesca',
+                'opcao_b': 'Um prato feito com peixe pintado',
+                'opcao_c': 'Uma dança tradicional',
+                'opcao_d': 'Um instrumento musical',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'O pequi é usado em qual tipo de preparo?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 1,
+                'opcao_a': 'Arroz com pequi',
+                'opcao_b': 'Licor de pequi',
+                'opcao_c': 'Frango com pequi',
+                'opcao_d': 'Todos os anteriores',
+                'resposta': 'D'
+            },
+            # Fase 2 – Festa do Rio
+            {
+                'pergunta': 'Qual instrumento é usado no rasqueado?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Violão',
+                'opcao_b': 'Viola de cocho',
+                'opcao_c': 'Guitarra',
+                'opcao_d': 'Flauta',
+                'resposta': 'B'
+            },
+            {
+                'pergunta': 'Qual a origem do termo "pantaneiro"?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Do modo de vida no Pantanal',
+                'opcao_b': 'De uma tribo indígena',
+                'opcao_c': 'De um tipo de peixe',
+                'opcao_d': 'De uma planta local',
+                'resposta': 'A'
+            },
+            {
+                'pergunta': 'Que animal é símbolo do Pantanal?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Onça-pintada',
+                'opcao_b': 'Tuiuiú',
+                'opcao_c': 'Arara-azul',
+                'opcao_d': 'Jacaré',
+                'resposta': 'B'
+            },
+            # Fase 3 – Encontro das Marés
+            {
+                'pergunta': 'Qual o papel do barco nas festas tradicionais pantaneiras?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Transporte de participantes',
+                'opcao_b': 'Palco para apresentações',
+                'opcao_c': 'Local para preparo de comida',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'Quais alimentos típicos são preparados durante as celebrações ribeirinhas no Pantanal?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 2,
+                'opcao_a': 'Peixes assados',
+                'opcao_b': 'Arroz com pequi',
+                'opcao_c': 'Carne seca',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            {
+                'pergunta': 'Como os ciclos do rio afetam o modo de vida local?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Determinando épocas de pesca',
+                'opcao_b': 'Influenciando a agricultura',
+                'opcao_c': 'Definindo rotas de transporte',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
+            },
+            # Fase 4 – Boss: O Monstro das Águas Profundas
+            {
+                'pergunta': 'Como a cultura pantaneira une ecologia, misticismo e tradição?',
+                'classe_pergunta': 3,
+                'dificuldade_pergunta': 3,
+                'opcao_a': 'Através de lendas sobre a natureza',
+                'opcao_b': 'Por práticas sustentáveis tradicionais',
+                'opcao_c': 'Na relação harmoniosa com o ambiente',
+                'opcao_d': 'Todas as anteriores',
+                'resposta': 'D'
             }
         ]
         
         inserir = Inserir_perguntas(self.db.db_name)
-        return inserir.inserir_perguntas(perguntas_exemplo)
+        return inserir.inserir_perguntas(todas_perguntas)
 
 class Inserir_perguntas:
     def __init__(self, db_name):
