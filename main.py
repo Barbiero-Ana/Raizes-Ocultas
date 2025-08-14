@@ -1,6 +1,6 @@
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMessageBox, QMainWindow
 from PyQt6.QtGui import QIcon
 
 def setup_paths():
@@ -10,7 +10,7 @@ def setup_paths():
         project_root,                                    
         os.path.join(project_root, 'front'),            # front
         os.path.join(project_root, 'front', 'Screens'), # telas
-        os.path.join(project_root, 'assets')            # assets
+        os.path.join(project_root, 'assets')           # assets
     ]
     
     for path in paths_to_add:
@@ -37,7 +37,7 @@ def check_files():
     optional_files = [
         ('front/Screens/class_register_screen.py', 'Tela de Cadastro de Turma'),
         ('assets/ScreenElements/MT-bandeira-logo.png', 'Logo Principal'),
-        ('assets/ScreenElements/gamescreen/logo-temp.png', 'Ícone do App')  # Adicionado aqui
+        ('assets/ScreenElements/gamescreen/logo-temp.png', 'Ícone do App')
     ]
     
     all_good = True
@@ -91,8 +91,23 @@ def initialize_database():
         print(f"❌ Erro ao inicializar banco: {str(e)}")
         return False
 
+def load_icon(relative_path):
+    """Carrega um ícone a partir do caminho relativo ao script principal"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(base_dir, *relative_path.split('/'))
+    
+    if os.path.exists(icon_path):
+        return QIcon(icon_path)
+    print(f"⚠️ Ícone não encontrado: {icon_path}")
+    return QIcon()  # Retorna ícone vazio se não encontrar
+
 def main():
     print("🎮 === INICIANDO RAÍZES OCULTAS ===\n")
+    
+    # Configuração para ícone na taskbar no Windows
+    if sys.platform == 'win32':
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('raizes.ocultas.1.0')
     
     setup_paths()
 
@@ -108,24 +123,24 @@ def main():
         app = QApplication(sys.argv)
         app.setApplicationName("Raízes Ocultas")
         
-        # Caminho absoluto para o ícone
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(base_dir, 'assets', 'ScreenElements', 'gamescreen', 'logo-temp.png')
+        # Carrega o ícone principal
+        app_icon = load_icon('assets/ScreenElements/gamescreen/logo-temp.png')
         
-        if os.path.exists(icon_path):
-            try:
-                app.setWindowIcon(QIcon(icon_path))
-                print(f"✅ Ícone carregado com sucesso: {icon_path}")
-            except Exception as e:
-                print(f"⚠️ Aviso: O ícone foi encontrado mas não pôde ser carregado: {str(e)}")
+        if not app_icon.isNull():
+            app.setWindowIcon(app_icon)
+            print("✅ Ícone principal carregado com sucesso")
         else:
-            print(f"⚠️ Aviso: Ícone não encontrado em {icon_path}")
-            print("💡 Dica: Verifique se o arquivo existe e o caminho está correto")
+            print("⚠️ Nenhum ícone principal carregado")
         
         app.setApplicationVersion("1.0")
 
         from front.Screens.Login_screen import TelaLogin        
         janela_login = TelaLogin()
+        
+        # Define o mesmo ícone para a janela
+        if not app_icon.isNull():
+            janela_login.setWindowIcon(app_icon)
+        
         janela_login.show()
         print("\n✅ Aplicação iniciada com sucesso!")
         print("=" * 50)
