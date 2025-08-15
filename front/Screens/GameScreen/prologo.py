@@ -141,6 +141,199 @@ class MapButton(QPushButton):
     def on_clicked(self):
         self.location_clicked.emit(self.location_name, self.level)
 
+class MenuScreen(QMainWindow):
+    
+    def __init__(self, font_manager=None, parent=None, map_screen=None, game_screen=None):
+        super().__init__(parent)
+        self.font_manager = font_manager
+        self.map_screen = map_screen
+        self.game_screen = game_screen
+        self.setup_menu_ui()
+    
+    def setup_menu_ui(self):
+        self.setWindowTitle("Menu - Raízes Ocultas")
+        self.setFixedSize(400, 300)
+        
+        # Centralizar na tela - buscar a janela principal (GameManager)
+        game_manager = self.parent()
+        if hasattr(self.parent(), 'parent') and self.parent().parent():
+            game_manager = self.parent().parent()
+        
+        if game_manager:
+            parent_geometry = game_manager.geometry()
+            x = parent_geometry.x() + (parent_geometry.width() - 400) // 2
+            y = parent_geometry.y() + (parent_geometry.height() - 300) // 2
+            self.setGeometry(x, y, 400, 300)
+        else:
+            # Fallback: centralizar na tela do sistema
+            from PyQt6.QtWidgets import QApplication
+            screen = QApplication.primaryScreen().geometry()
+            x = (screen.width() - 400) // 2
+            y = (screen.height() - 300) // 2
+            self.setGeometry(x, y, 400, 300)
+        
+        # Widget principal
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        
+        # Layout principal
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setSpacing(30)
+        main_layout.setContentsMargins(40, 40, 40, 40)
+        
+        # Fundo do menu
+        main_widget.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #8B4513, stop:0.5 #A0522D, stop:1 #654321);
+                border: 4px solid #FFD700;
+                border-radius: 20px;
+            }
+        """)
+        
+        # Título do menu
+        title_label = QLabel("☰ MENU")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        if self.font_manager:
+            title_font = self.font_manager.get_font("titulo", size=24, bold=True)
+            title_label.setFont(title_font)
+        
+        title_label.setStyleSheet("""
+            QLabel {
+                color: #FFD700;
+                background: transparent;
+                border: none;
+                padding: 10px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            }
+        """)
+        
+        main_layout.addWidget(title_label)
+        
+        # Espaçamento
+        main_layout.addSpacing(20)
+        
+        # Botão Continuar
+        self.continue_button = QPushButton("▶ Continuar")
+        self.continue_button.setFixedSize(250, 50)
+        self.continue_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        if self.font_manager:
+            button_font = self.font_manager.get_font("botoes", size=14, bold=True)
+            self.continue_button.setFont(button_font)
+        
+        self.continue_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #32CD32, stop:1 #228B22);
+                color: #FFFFFF;
+                border: 3px solid #228B22;
+                border-radius: 25px;
+                padding: 10px;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            }
+            QPushButton:hover {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #3CB371, stop:1 #2E8B57);
+                border-color: #3CB371;
+                transform: translateY(-2px);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #228B22, stop:1 #006400);
+                transform: translateY(0px);
+            }
+        """)
+        
+        self.continue_button.clicked.connect(self.close_menu)
+        main_layout.addWidget(self.continue_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        # Espaçamento
+        main_layout.addSpacing(10)
+        
+        # Botão Sair
+        self.exit_button = QPushButton("🚪 Sair")
+        self.exit_button.setFixedSize(250, 50)
+        self.exit_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        if self.font_manager:
+            button_font = self.font_manager.get_font("botoes", size=14, bold=True)
+            self.exit_button.setFont(button_font)
+        
+        self.exit_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #780000, stop:1 #B22222);
+                color: #FFFFFF;
+                border: 3px solid #B22222;
+                border-radius: 25px;
+                padding: 10px;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            }
+            QPushButton:hover {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #FF1493, stop:1 #DC143C);
+                border-color: #FF1493;
+                transform: translateY(-2px);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #B22222, stop:1 #8B0000);
+                transform: translateY(0px);
+            }
+        """)
+        
+        self.exit_button.clicked.connect(self.exit_to_game_screen)
+        main_layout.addWidget(self.exit_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        # Espaçamento final
+        main_layout.addStretch()
+    
+    def close_menu(self):
+        """Fecha o menu e continua no mapa"""
+        self.close()
+    
+    def exit_to_game_screen(self):
+        """Sai para a tela inicial (game_screen)"""
+        self.close()
+        
+        # Buscar o GameManager (parent do MapScreen)
+        game_manager = None
+        if hasattr(self.map_screen, 'parent') and self.map_screen.parent():
+            game_manager = self.map_screen.parent()
+        
+        if game_manager and hasattr(game_manager, 'show_game_screen'):
+            # Usar o método do GameManager para mostrar game_screen
+            game_manager.show_game_screen()
+        else:
+            # Fallback: tentar encontrar uma instância existente na aplicação
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app:
+                for widget in app.allWidgets():
+                    if widget.__class__.__name__ == 'GameScreen' and hasattr(widget, 'show'):
+                        # Fechar o GameManager
+                        if game_manager:
+                            game_manager.close()
+                        widget.show()
+                        return
+            
+            # Último recurso: criar nova instância com parâmetros padrão
+            print("⚠️ Criando nova instância do GameScreen")
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+            from game_screen import GameScreen
+            
+            # Fechar a janela atual do mapa/jogo
+            if game_manager:
+                game_manager.close()
+            
+            # Mostrar a tela inicial com parâmetros padrão
+            game_screen = GameScreen(tela_login=None, id_usuario=None)
+            game_screen.show()
+
 class MapScreen(QMainWindow):
 
     def __init__(self, font_manager=None, parent=None):
@@ -355,9 +548,27 @@ class MapScreen(QMainWindow):
         self.info_popup.show()
         # Auto-ocultar -> 3000 = 3 segundos (presta atenção nisso ANAAAAAAAAA)
         QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
+    
+    def show_menu(self):
+        """Abre a tela de menu"""
+        # Obter referência do game_screen através do parent (GameManager)
+        game_screen = None
+        if hasattr(self.parent(), 'game_screen'):
+            game_screen = self.parent().game_screen
+        
+        self.menu_screen = MenuScreen(
+            font_manager=self.font_manager,
+            parent=self,
+            map_screen=self,
+            game_screen=game_screen
+        )
+        
+        # Tornar o menu modal (bloqueia interação com a janela pai)
+        self.menu_screen.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.menu_screen.show()
 
 class GameManager(QMainWindow):
-    def __init__(self):
+    def __init__(self, original_game_screen=None, tela_login=None, id_usuario=None):
         super().__init__()
         self.setWindowTitle("Raízes Ocultas")
         self.setFixedSize(1000, 700)
@@ -368,14 +579,20 @@ class GameManager(QMainWindow):
         self.font_manager = FontManager()
         self.load_fonts()
         
+        # Armazenar referência para o GameScreen original (se fornecido)
+        self.original_game_screen = original_game_screen
+        self.tela_login = tela_login
+        self.id_usuario = id_usuario
+        
         self.prologue_screen = PrologoRPG(self.show_map)
-        self.map_screen = MapScreen(self.font_manager)
+        self.map_screen = MapScreen(self.font_manager, parent=self)
         
         self.stacked_widget.addWidget(self.prologue_screen)
         self.stacked_widget.addWidget(self.map_screen)
         
-        self.map_screen.back_button.clicked.connect(self.show_prologue)
-        self.map_screen.skip_button.clicked.connect(self.start_game)  # Conectar ao método correto
+        # Conectar botão menu ao método show_menu
+        self.map_screen.back_button.clicked.connect(self.map_screen.show_menu)
+        self.map_screen.skip_button.clicked.connect(self.start_game)
         
         self.show_prologue()
     
@@ -400,6 +617,23 @@ class GameManager(QMainWindow):
     
     def start_game(self):
         print("🎮 Iniciando o jogo...")
+    
+    def show_game_screen(self):
+        """Mostra a tela inicial do jogo (game_screen)"""
+        self.close()
+        
+        if self.original_game_screen:
+            # Usar a instância original do GameScreen
+            self.original_game_screen.show()
+        else:
+            # Criar uma nova instância com os parâmetros corretos
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+            from game_screen import GameScreen
+            
+            game_screen = GameScreen(tela_login=self.tela_login, id_usuario=self.id_usuario)
+            game_screen.show()
 
 class BubbleWidget(QWidget):
     def __init__(self, parent=None):
@@ -917,10 +1151,19 @@ def show_prologue(parent=None, on_finish=None):
     return prologue
 
 
+def start_game_with_prologue(original_game_screen=None, tela_login=None, id_usuario=None):
+    """Função para iniciar o jogo com prólogo, preservando a instância original do GameScreen"""
+    game_manager = GameManager(
+        original_game_screen=original_game_screen,
+        tela_login=tela_login,
+        id_usuario=id_usuario
+    )
+    game_manager.show()
+    return game_manager
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-
     game = GameManager()
     game.show()
     
