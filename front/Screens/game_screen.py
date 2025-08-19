@@ -260,7 +260,7 @@ class GameScreen(QMainWindow):
         
         # Conectar eventos dos botões
         self.btn_novo_jogo.clicked.connect(self.abrir_tela_criar_turma)
-        self.btn_carregar_jogo.clicked.connect(self.ir_direto_ao_jogo)  # Mudança temporária para teste
+        self.btn_carregar_jogo.clicked.connect(self.carregar_turma)  
         self.btn_estatisticas.clicked.connect(self.mostrar_estatisticas)
         self.btn_equipe.clicked.connect(self.mostrar_equipe)
         self.btn_projeto.clicked.connect(self.mostrar_projeto)
@@ -279,6 +279,7 @@ class GameScreen(QMainWindow):
         dialog = ListarTurmasDialog(self, self.id_usuario)
         dialog.exec()
         
+    #Função de teste   
     def ir_direto_ao_jogo(self):
         """Vai diretamente para o jogo sem passar pelo prólogo"""
         try:

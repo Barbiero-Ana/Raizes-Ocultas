@@ -10,7 +10,7 @@ from PyQt6.QtCore import Qt, QPropertyAnimation
 import random
 
 # Import das telas
-from game_screen import GameScreen
+
 
 class HoverLabel(QLabel):
     def __init__(self, parent=None):
@@ -247,6 +247,8 @@ class TelaLogin(QMainWindow):
         self.animacao.start()
 
     def ir_game_screen(self, fade_in=False):
+        from game_screen import GameScreen
+
         self.tela_game = GameScreen(tela_login=self, id_usuario=self.id_usuario)  # Passa o id_usuario
         self.tela_game.show()
 
