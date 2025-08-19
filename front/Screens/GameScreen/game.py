@@ -104,23 +104,18 @@ class GameScreen(QMainWindow):
             }
         """)
         
-        # Carregar sprites do personagem
         self.load_character_sprites()
         
-        # Definir sprite inicial (parado)
         self.update_character_sprite()
         
-        # Posicionar no centro da área do jogo
         center_x = (self.game_area.width() - self.character.width()) // 2
         center_y = (self.game_area.height() - self.character.height()) // 2
         self.character.move(center_x, center_y)
         
         # Garantir que o personagem seja visível
         self.character.show()
-        self.character.raise_()  # Trazer para frente
-        self.character.setVisible(True)  # Forçar visibilidade
-        
-        # Garantir que o personagem fique sempre acima da imagem de fundo
+        self.character.raise_()  
+        self.character.setVisible(True)     
         if hasattr(self, 'background_image') and self.background_image:
             self.character.raise_()
         
@@ -152,7 +147,6 @@ class GameScreen(QMainWindow):
             self.setup_placeholder_sprites()
     
     def setup_placeholder_sprites(self):
-        """Cria sprites placeholder usando emojis/texto"""
         placeholders = {
             "idle": "🧑‍🌾",
             "moving": "🚶‍♂️"
@@ -163,8 +157,6 @@ class GameScreen(QMainWindow):
             self.character_sprites[state] = emoji
             
     def update_character_sprite(self):
-        """Atualiza o sprite do personagem baseado no estado atual"""
-        # Determinar qual sprite usar (apenas 2 estados: idle ou moving)
         sprite_key = self.current_state  # "idle" ou "moving"
         
         # Aplicar o sprite
@@ -193,12 +185,10 @@ class GameScreen(QMainWindow):
             self.set_character_placeholder()
         
     def set_character_placeholder(self):
-        """Define um placeholder visual para o personagem"""
         self.character.setText("🧑‍🌾")
         self.set_character_placeholder_style()
         
     def set_character_placeholder_style(self):
-        """Aplica o estilo do placeholder"""
         self.character.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.character.setStyleSheet("""
             QLabel {
@@ -211,7 +201,6 @@ class GameScreen(QMainWindow):
         """)
         
     def setup_movement(self):
-        """Configura o sistema de movimentação"""
         # Timer para movimento contínuo
         self.movement_timer = QTimer()
         self.movement_timer.timeout.connect(self.update_movement)
@@ -221,7 +210,6 @@ class GameScreen(QMainWindow):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         
     def setup_narration_area(self, main_layout):
-        """Configura a área de narração na parte inferior"""
         # Container da narração
         narration_container = QFrame()
         narration_container.setFixedHeight(150)

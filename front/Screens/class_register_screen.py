@@ -127,7 +127,6 @@ class ClassRegisterDialog(QDialog):
         layout.addWidget(self.btn_voltar)
 
     def cadastrar_turma(self):
-        """Função para cadastrar a turma usando os dados dos inputs"""
         nome = self.nome_turma_input.text().strip()
         quantidade = int(self.combo_qtd_alunos.currentText())
         serie = self.combo_serie.currentText()
@@ -137,18 +136,16 @@ class ClassRegisterDialog(QDialog):
             QMessageBox.warning(self, "Aviso", "O nome da turma é obrigatório!")
             return
 
-        # Verifica se id_usuario está definido
         if self.id_usuario is None:
             QMessageBox.critical(self, "Erro", "Usuário não identificado. Faça login novamente.")
             return
 
-        # Usar a classe CadastrarTurma para cadastrar
         cadastro = CadastrarTurma(self.id_usuario)
         sucesso, mensagem, turma_id = cadastro.cadastrar_turma(nome, quantidade, serie)
 
         if sucesso:
             QMessageBox.information(self, "Sucesso", mensagem)
-            self.accept()  # Fechar o diálogo após cadastro bem-sucedido
+            self.accept()  
         else:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Icon.Warning)
