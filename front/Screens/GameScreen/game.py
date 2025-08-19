@@ -13,26 +13,21 @@ class GameScreen_Game(QMainWindow):
         super().__init__(parent)
         self.parent_window = parent
         
-        # Variáveis de movimento
         self.movement_speed = 5
         self.keys_pressed = set()
         
-        # Variáveis para sprites
-        self.current_state = "idle"  # "idle" ou "moving"
+        self.current_state = "idle"  
         
-        # Variáveis para o fade do fundo
         self.background_image = None
         self.background_fade_effect = None
         self.background_animation = None
         
-        # Variáveis para o sistema de trilha
         self.narration_finished = False
         self.trail_mode = False
         self.background_x_offset = 0
         self.trail_distance = 0
         self.npc_met = False
         
-        # Sistema de trigger zones e transições
         self.trigger_zones = []
         self.is_transitioning = False
         self.fade_widget = None
@@ -40,20 +35,16 @@ class GameScreen_Game(QMainWindow):
         self.current_scene = "main"
         self.scenes = {}
         
-        # Sistema de detecção de proximidade
-        self.proximity_distance = 60  # pixels para ativar interação
+        self.proximity_distance = 60  
         self.auto_dialog_triggered = False
         
-        # Debug visual dos trigger points
         self.show_trigger_debug = False
         self.trigger_debug_widgets = []
         
-        # NPC
         self.npc = None
         self.dialog_box = None
         self.in_dialog = False
         
-        # Inicializar interface
         self.setup_game_ui()
         self.setup_character()
         self.setup_movement()
@@ -71,10 +62,8 @@ class GameScreen_Game(QMainWindow):
         ]
         self.current_narration_index = 0
         
-        # Configurar trigger zones e cenas
-        self.load_trigger_config()  # Tentar carregar do JSON primeiro
-        self.setup_trigger_zones()  # Fallback para configuração hardcoded
-        self.setup_scenes()
+        self.load_trigger_config()
+        self.setup_trigger_zones()  
         
     def setup_game_ui(self):
         """Configura a interface principal do jogo"""
@@ -92,33 +81,24 @@ class GameScreen_Game(QMainWindow):
             }
         """)
         
-        # Layout principal sem margens para ocupar toda a tela
         main_layout = QVBoxLayout(main_widget)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Área do jogo (onde o personagem se move)
         self.game_area = QFrame()
         self.game_area.setFixedSize(1000, 550)  # Deixa espaço para a narração
         self.game_area.setStyleSheet("background-color: #000000;")
         
-        # Garantir que a área do jogo seja visível
-        self.game_area.show()
-        
-        # Preparar imagem de fundo (inicialmente invisível)
+        self.game_area.show()        
         self.setup_background_image()
         
-        main_layout.addWidget(self.game_area)
-        
-        # Área da narração na parte inferior
+        main_layout.addWidget(self.game_area)        
         self.setup_narration_area(main_layout)
         
     def setup_character(self):
-        """Configura o personagem (boneco) no centro da tela"""
         self.character = QLabel(self.game_area)
         self.character.setFixedSize(60, 80)
         
-        # Definir estilo base para o personagem
         self.character.setStyleSheet("""
             QLabel {
                 background-color: transparent;
@@ -134,21 +114,17 @@ class GameScreen_Game(QMainWindow):
         center_y = (self.game_area.height() - self.character.height()) // 2
         self.character.move(center_x, center_y)
         
-        # Garantir que o personagem seja visível
         self.character.show()
         self.character.raise_()  
         self.character.setVisible(True)     
         if hasattr(self, 'background_image') and self.background_image:
             self.character.raise_()
             
-        # Configurar widget de fade para transições
         self.setup_fade_widget()
         
-        # Configurar visualização debug dos trigger points (se ativada)
         self.setup_trigger_debug_visual()
         
     def load_character_sprites(self):
-        """Carrega os sprites do personagem para diferentes estados"""
         # Inicializar dicionário de sprites
         self.character_sprites = {}
         
@@ -158,7 +134,6 @@ class GameScreen_Game(QMainWindow):
             "moving": "assets/ScreenElements/personagens/player-walking.png"
         }
         
-        # Carregar cada sprite
         for state, path in sprite_paths.items():
             if os.path.exists(path):
                 pixmap = QPixmap(path)
@@ -170,7 +145,6 @@ class GameScreen_Game(QMainWindow):
                     )
                     self.character_sprites[state] = scaled_pixmap
         
-        # Se não conseguiu carregar nenhum sprite, usar placeholder
         if not self.character_sprites:
             self.setup_placeholder_sprites()
     
@@ -181,21 +155,17 @@ class GameScreen_Game(QMainWindow):
         }
         
         for state, emoji in placeholders.items():
-            # Criar um QPixmap com o emoji/texto
             self.character_sprites[state] = emoji
             
     def update_character_sprite(self):
-        sprite_key = self.current_state  # "idle" ou "moving"
+        sprite_key = self.current_state  
         
-        # Aplicar o sprite
         if sprite_key in self.character_sprites:
             sprite = self.character_sprites[sprite_key]
             
             if isinstance(sprite, QPixmap):
-                # É uma imagem
                 self.character.setPixmap(sprite)
-                self.character.setText("")  # Limpar texto
-                # Manter estilo básico
+                self.character.setText("") 
                 self.character.setStyleSheet("""
                     QLabel {
                         background-color: transparent;
@@ -204,12 +174,10 @@ class GameScreen_Game(QMainWindow):
                 """)
                 self.character.setAlignment(Qt.AlignmentFlag.AlignCenter)
             else:
-                # É um placeholder de texto/emoji
                 self.character.setText(sprite)
-                self.character.setPixmap(QPixmap())  # Limpar imagem
+                self.character.setPixmap(QPixmap()) 
                 self.set_character_placeholder_style()
         else:
-            # Fallback para sprite idle
             self.set_character_placeholder()
         
     def set_character_placeholder(self):
@@ -229,12 +197,9 @@ class GameScreen_Game(QMainWindow):
         """)
         
     def setup_movement(self):
-        # Timer para movimento contínuo
         self.movement_timer = QTimer()
         self.movement_timer.timeout.connect(self.update_movement)
         self.movement_timer.start(16)  # ~60 FPS
-        
-        # Foco na janela para capturar teclas
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         
     def setup_narration_area(self, main_layout):
@@ -248,17 +213,14 @@ class GameScreen_Game(QMainWindow):
             }
         """)
         
-        # Layout da narração
         narration_layout = QVBoxLayout(narration_container)
         narration_layout.setContentsMargins(20, 15, 20, 15)
         narration_layout.setSpacing(10)
         
-        # Label da narração
         self.narration_label = QLabel()
         self.narration_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.narration_label.setWordWrap(True)
         
-        # Configurar fonte da narração
         narration_font = QFont("Arial", 16)
         narration_font.setBold(True)
         self.narration_label.setFont(narration_font)
@@ -272,7 +234,6 @@ class GameScreen_Game(QMainWindow):
             }
         """)
         
-        # Inicialmente vazio
         self.narration_label.setText("")
         
         narration_layout.addWidget(self.narration_label)
@@ -282,22 +243,19 @@ class GameScreen_Game(QMainWindow):
         self.narration_timer = QTimer()
         self.narration_timer.setSingleShot(True)
         self.narration_timer.timeout.connect(self.start_narration)
-        self.narration_timer.start(10000)  # 10 segundos
+        self.narration_timer.start(80000)  
         
     def setup_background_image(self):
-        # Criar QLabel para a imagem de fundo
         self.background_image = QLabel(self.game_area)
         self.background_image.setFixedSize(1000, 550)
         self.background_image.setScaledContents(True)
         
-        # Tentar carregar imagem de fundo
         background_path = "assets/ScreenElements/gamescreen/game-test.png"
         if os.path.exists(background_path):
             pixmap = QPixmap(background_path)
             if not pixmap.isNull():
                 self.background_image.setPixmap(pixmap)
         else:
-            # Fallback - criar um gradiente simples
             self.background_image.setStyleSheet("""
                 QLabel {
                     background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1,
@@ -770,26 +728,40 @@ class GameScreen_Game(QMainWindow):
         npc = QLabel(self.game_area)
         npc.setFixedSize(60, 80)
         
-        # Emojis diferentes por tipo
-        npc_emojis = {
+        # Caminhos das imagens dos NPCs
+        npc_images = {
             'sage': 'assets/ScreenElements/gamescreen/NPCs/espirito-serra.png',
             'elder': '👴',
             'fisherman': '🎣',
             'capivara': '🦫'
         }
         
-        emoji = npc_emojis.get(npc_type, '🦫')
-        npc.setText(emoji)
-        npc.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        npc.setStyleSheet("""
-            QLabel {
-                font-size: 40px;
-                color: #8B4513;
-                background-color: rgba(139, 69, 19, 0.3);
-                border: 2px solid #8B4513;
-                border-radius: 30px;
-            }
-        """)
+        npc_source = npc_images.get(npc_type, '🦫')
+        
+        # Verificar se é um caminho de imagem ou emoji
+        if npc_source.endswith('.png') and os.path.exists(npc_source):
+            # Carregar imagem
+            pixmap = QPixmap(npc_source)
+            if not pixmap.isNull():
+                scaled_pixmap = pixmap.scaled(
+                    60, 80, 
+                    Qt.AspectRatioMode.KeepAspectRatio, 
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                npc.setPixmap(scaled_pixmap)
+                npc.setStyleSheet("""
+                    QLabel {
+                        background-color: transparent;
+                        border: none;
+                    }
+                """)
+                npc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            else:
+                # Fallback para emoji se imagem não carregar
+                self.setup_npc_emoji_fallback(npc, '🧙')
+        else:
+            # É um emoji - usar estilo de placeholder
+            self.setup_npc_emoji_fallback(npc, npc_source)
         
         npc.move(x, y)
         npc.show()
@@ -802,6 +774,20 @@ class GameScreen_Game(QMainWindow):
         # Se é o primeiro NPC, definir como principal
         if not self.npc:
             self.npc = npc
+    
+    def setup_npc_emoji_fallback(self, npc, emoji):
+        """Define estilo de emoji para NPCs quando imagem não está disponível"""
+        npc.setText(emoji)
+        npc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        npc.setStyleSheet("""
+            QLabel {
+                font-size: 40px;
+                color: #8B4513;
+                background-color: rgba(139, 69, 19, 0.3);
+                border: 2px solid #8B4513;
+                border-radius: 30px;
+            }
+        """)
             
     def check_npc_proximity(self, player_x, player_y):
 
