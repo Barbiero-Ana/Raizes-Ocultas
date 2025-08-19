@@ -614,9 +614,19 @@ class GameManager(QMainWindow):
     def show_map(self):
         print("🗺️ Abrindo mapa...")
         self.stacked_widget.setCurrentWidget(self.map_screen)
+        self.show()  # Certificar que a janela está visível
     
     def start_game(self):
         print("🎮 Iniciando o jogo...")
+        # Importar e iniciar a nova tela de jogo
+        from game import GameScreen
+        
+        # Criar e mostrar a tela de jogo
+        self.game_screen = GameScreen(parent=self)
+        self.game_screen.show()
+        
+        # Esconder o GameManager atual
+        self.hide()
     
     def show_game_screen(self):
         """Mostra a tela inicial do jogo (game_screen)"""

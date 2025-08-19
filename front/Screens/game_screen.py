@@ -47,6 +47,9 @@ class GameScreen(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
+        # --- Layout principal PRIMEIRO
+        main_layout = QVBoxLayout(central_widget)
+        
         # --- Background 
         self.background_label = QLabel(central_widget)
         
@@ -59,9 +62,7 @@ class GameScreen(QMainWindow):
             self.background_label.setStyleSheet("background-color: #2c3e50;")
         
         self.background_label.setGeometry(0, 0, 1000, 700)  
-        self.background_label.lower()  
-
-        main_layout = QVBoxLayout(central_widget)
+        self.background_label.lower()
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(30)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
@@ -259,7 +260,7 @@ class GameScreen(QMainWindow):
         
         # Conectar eventos dos botões
         self.btn_novo_jogo.clicked.connect(self.abrir_tela_criar_turma)
-        self.btn_carregar_jogo.clicked.connect(self.carregar_turma)
+        self.btn_carregar_jogo.clicked.connect(self.ir_direto_ao_jogo)  # Mudança temporária para teste
         self.btn_estatisticas.clicked.connect(self.mostrar_estatisticas)
         self.btn_equipe.clicked.connect(self.mostrar_equipe)
         self.btn_projeto.clicked.connect(self.mostrar_projeto)
@@ -277,6 +278,30 @@ class GameScreen(QMainWindow):
         # Substitua o método existente por este:
         dialog = ListarTurmasDialog(self, self.id_usuario)
         dialog.exec()
+        
+    def ir_direto_ao_jogo(self):
+        """Vai diretamente para o jogo sem passar pelo prólogo"""
+        try:
+            # Importar o jogo da pasta GameScreen
+            import sys
+            import os
+            game_path = os.path.join(os.path.dirname(__file__), 'GameScreen')
+            if game_path not in sys.path:
+                sys.path.append(game_path)
+            
+            from GameScreen import GameScreen
+            
+            # Criar e mostrar a tela de jogo
+            self.direct_game = GameScreen()
+            self.direct_game.show()
+            
+            # Esconder a tela atual
+            self.hide()
+            
+        except ImportError as e:
+            print(f"Erro ao importar o jogo: {e}")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Erro", "Não foi possível carregar o jogo!")
 
     def mostrar_estatisticas(self):
         from PyQt6.QtWidgets import QMessageBox
