@@ -1,5 +1,7 @@
 import sys
 import os
+import sqlite3
+import tkinter as tk
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton, 
     QVBoxLayout, QHBoxLayout, QGraphicsOpacityEffect, QStackedWidget
@@ -335,12 +337,12 @@ class MenuScreen(QMainWindow):
             game_screen.show()
 
 class MapScreen(QMainWindow):
-
+    location_selected_signal = pyqtSignal(str, int, int)  # Nome, Dificuldade, Classe
+    
     def __init__(self, font_manager=None, parent=None):
         super().__init__(parent)
         self.font_manager = font_manager
         self.setup_map_ui()
-
     def setup_background(self, main_widget):
         background_path = "assets/ScreenElements/gamescreen/Map/game-map-3.png"
         
@@ -483,24 +485,24 @@ class MapScreen(QMainWindow):
 
         locations = [
             # Lado esquerdo (aldeias indígenas)
-            {"name": "Aldeia Bororo", "level": 1, "x": 225, "y": 240},
-            {"name": "Aldeia Xavante", "level": 2, "x": 180, "y": 230},
-            {"name": "Aldeia Karajá", "level": 3, "x": 160, "y": 300},
-            {"name": "Aldeia Terena", "level": 4, "x": 180, "y": 370},
+            {"name": "Aldeia Bororo", "level": "1-1", "x": 225, "y": 240},
+            {"name": "Aldeia Xavante", "level": "1-2", "x": 180, "y": 230},
+            {"name": "Aldeia Karajá", "level": "1-3", "x": 160, "y": 300},
+            {"name": "Aldeia Terena", "level": "1-4", "x": 180, "y": 370},
             
             # lado esquerdo inferior
-            {"name": "Centro Geodésico", "level": 1, "x": 257, "y": 480},
-            {"name": "Chapada dos Guimarães", "level": 2, "x": 310, "y": 515},
-            {"name": "Porto de Cáceres", "level": 3, "x": 115, "y": 492},
-            {"name": "Vila Bela", "level": 4, "x": 170, "y": 503},
+            {"name": "Centro Geodésico", "level": "2-1", "x": 257, "y": 480},
+            {"name": "Chapada dos Guimarães", "level": "2-2", "x": 310, "y": 515},
+            {"name": "Porto de Cáceres", "level": "2-3", "x": 115, "y": 492},
+            {"name": "Vila Bela", "level": "2-4", "x": 170, "y": 503},
             
             # Lado direito (castelo e vilas)
-            {"name": "Castelo dos Bandeirantes", "level": 1, "x": 810, "y": 250},            
+            {"name": "Castelo dos Bandeirantes", "level": "4-1", "x": 810, "y": 250},            
             # lado direito inferior
-            {"name": "Pantanal Norte", "level": 1, "x": 725, "y": 572},
-            {"name": "Pantanal Sul", "level": 2, "x": 788, "y": 543},
-            {"name": "Pantanal Ancestral", "level": 3, "x": 840, "y": 500},
-            {"name": "Corumbá", "level": 4, "x": 758, "y": 437},
+            {"name": "Pantanal Norte", "level": "3-1", "x": 725, "y": 572},
+            {"name": "Pantanal Sul", "level": "3-2", "x": 788, "y": 543},
+            {"name": "Pantanal Ancestral", "level": "3-3", "x": 840, "y": 500},
+            {"name": "Corumbá", "level": "3-4", "x": 758, "y": 437},
         ]
         
         for location in locations:
@@ -516,12 +518,21 @@ class MapScreen(QMainWindow):
             if self.font_manager:
                 button_font = self.font_manager.get_font("botoes", size=12, bold=True)
                 map_button.setFont(button_font)
-    
-    def on_location_selected(self, location_name: str, level: int):
-        print(f"🗺️ Local selecionado: {location_name} (Nível {level})")        
-        self.show_location_info(location_name, level)
-    
-    def show_location_info(self, location_name: str, level: int):
+
+    def on_location_selected(self, location_name: str, level: str):
+            print(f"🗺️ Local selecionado: {location_name} (Nível {level})")        
+            self.show_location_info(location_name, level)
+            
+            # Emitir sinal com informações da fase selecionada
+            if hasattr(self, 'location_selected_signal'):
+                # Parse do nível para obter dificuldade e classe
+                try:
+                    dificuldade, classe = map(int, level.split('-'))
+                    self.location_selected_signal.emit(location_name, dificuldade, classe)
+                except ValueError:
+                    print(f"❌ Formato de nível inválido: {level}")
+
+    def show_location_info(self, location_name: str, level: str):
         if hasattr(self, 'info_popup') and self.info_popup:
             self.info_popup.hide()
             self.info_popup.deleteLater()        
@@ -529,6 +540,28 @@ class MapScreen(QMainWindow):
         self.info_popup.setGeometry(350, 150, 300, 120)
         self.info_popup.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
+        if self.font_manager:
+            info_font = self.font_manager.get_font("narração", size=14, bold=True)
+            self.info_popup.setFont(info_font)
+        
+        self.info_popup.setStyleSheet("""
+            QLabel {
+                background: rgba(139, 69, 19, 0.95);
+                color: #FFD700;
+                padding: 15px;
+                border-radius: 15px;
+                border: 3px solid #FFD700;
+                text-align: center;
+                font-weight: bold;
+            }
+        """)
+        
+        self.info_popup.show()
+        # Auto-ocultar após 4 segundos
+        QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
+        
+        # Retornar o nível para ser usado no QuizGame
+        return level
         if self.font_manager:
             info_font = self.font_manager.get_font("narração", size=14, bold=True)
             self.info_popup.setFont(info_font)
@@ -601,8 +634,87 @@ class GameManager(QMainWindow):
         self.map_screen.skip_button.clicked.connect(self.start_game)
         
         self.show_prologue()
-    
 
+        self.map_screen.location_selected_signal.connect(self.iniciar_quiz)
+    
+    def iniciar_quiz(self, location_name, dificuldade, classe):
+        """Inicia o quiz com os parâmetros da fase selecionada"""
+        print(f"🎮 Iniciando quiz: {location_name}, Dificuldade: {dificuldade}, Classe: {classe}")
+        
+        # Obter perguntas já respondidas por esta turma
+        perguntas_respondidas = self.obter_perguntas_respondidas()
+        
+        try:
+            # Importar e criar o quiz
+            from backend.jogo import QuizGame
+            
+            # Criar uma nova janela tkinter
+            quiz_root = tk.Tk()
+            quiz_root.title("Quiz - Raízes Ocultas")
+            quiz_root.geometry("800x600")
+            
+            # Centralizar a janela
+            quiz_root.update_idletasks()
+            width = quiz_root.winfo_width()
+            height = quiz_root.winfo_height()
+            x = (quiz_root.winfo_screenwidth() // 2) - (width // 2)
+            y = (quiz_root.winfo_screenheight() // 2) - (height // 2)
+            quiz_root.geometry(f"{width}x{height}+{x}+{y}")
+            
+            # Criar o jogo
+            quiz_game = QuizGame(
+                quiz_root, 
+                nivel=f"{dificuldade}-{classe}", 
+                id_turma=self.id_turma,
+                perguntas_anteriores=perguntas_respondidas
+            )
+            
+            # Configurar o que acontece quando o quiz fecha
+            quiz_root.protocol("WM_DELETE_WINDOW", lambda: self.ao_fechar_quiz(quiz_root))
+            
+            # Esconder a janela do mapa temporariamente
+            self.hide()
+            
+        except Exception as e:
+            print(f"❌ Erro ao iniciar quiz: {e}")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Erro", f"Não foi possível iniciar o quiz: {str(e)}")
+    
+    def ao_fechar_quiz(self, quiz_root):
+        """Chamado quando o quiz é fechado"""
+        try:
+            quiz_root.destroy()
+            # Mostrar novamente a janela do mapa
+            self.show()
+            self.raise_()  # Traz para frente
+            self.activateWindow()  # Ativa a janela
+        except:
+            pass
+    
+    def obter_perguntas_respondidas(self):
+        pasta_db = "database"
+        nome_banco = "raizes_ocultas.db"
+        caminho_completo = os.path.join(pasta_db, nome_banco)
+        """Obtém os IDs das perguntas já respondidas pela turma"""
+        if not self.id_turma:
+            return []
+            
+        try:
+            conn = sqlite3.connect(caminho_completo)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT id_pergunta FROM Dados_do_jogador 
+                WHERE id_turma = ?
+            """, (self.id_turma,))
+            
+            perguntas_respondidas = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return perguntas_respondidas
+            
+        except Exception as e:
+            print(f"Erro ao obter perguntas respondidas: {e}")
+            return []
     def load_fonts(self):
         font_paths = {
             "titulo": "assets/fonts/Ghost theory 2.ttf",

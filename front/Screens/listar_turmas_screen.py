@@ -114,25 +114,24 @@ class ListarTurmasDialog(QDialog):
             from front.Screens.GameScreen.prologo import GameManager
             
             # Criar instância do GameManager passando o ID da turma
-            game_manager = GameManager(
+            self.game_manager = GameManager(  # Armazenar como atributo
                 original_game_screen=self.parent,
-                tela_login=None,  # Ajuste conforme necessário
+                tela_login=None,
                 id_usuario=self.id_usuario,
-                id_turma=turma_id  # Novo parâmetro
+                id_turma=turma_id
             )
             
-            # Fechar a tela atual (se necessário)
-            if self.parent:
-                self.parent.hide()
+            # Fechar o diálogo de seleção de turma
+            self.accept()
             
             # Mostrar o GameManager
-            game_manager.show()
+            self.game_manager.show()
             
         except ImportError as e:
             QMessageBox.critical(self, "Erro", f"Erro ao iniciar o jogo: {str(e)}")
         except Exception as e:
             QMessageBox.critical(self, "Erro", f"Erro inesperado: {str(e)}")
-    
+        
     @staticmethod
     def get_turma_selecionada(parent=None, id_usuario=None):
         dialog = ListarTurmasDialog(parent, id_usuario)

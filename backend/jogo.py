@@ -13,10 +13,11 @@ nome_banco = "raizes_ocultas.db"
 caminho_completo = os.path.join(pasta_db, nome_banco)
 
 class QuizGame:
-    def __init__(self, root, nivel="1-1",id_turma = None):
+    def __init__(self, root, nivel="1-1", id_turma=None, perguntas_anteriores=None):
         self.root = root
-        self.root.title("Quiz Game")
-        self.root.geometry("600x400")
+        self.root.title("Quiz Game - Raízes Ocultas")
+        self.root.geometry("800x600")
+        self.root.configure(bg="#f0f0f0")
         self.pergunta_atual = 0
         self.pontuacao = 0
         self.vidas = 3
@@ -24,10 +25,11 @@ class QuizGame:
         self.tempo_restante = 0
         self.nivel = nivel
         self.respostas_corretas_consecutivas = 0
-        self.tempo_respostas = []  # Armazena o tempo gasto em cada resposta
+        self.tempo_respostas = []
         self.bonus_disponivel = False
-        self.id_turma = id_turma  # Adicione esta linha
-        
+        self.id_turma = id_turma
+        self.perguntas_anteriores = perguntas_anteriores or []  # IDs das perguntas já respondidas
+        self.root.protocol("WM_DELETE_WINDOW", self.fechar_quiz)
         # Parse do nível para obter dificuldade e classe
         self.dificuldade, self.classe = map(int, nivel.split('-'))
         
@@ -36,6 +38,8 @@ class QuizGame:
         
         # Configura os tempos baseados na dificuldade
         self.TEMPOS = self.definir_tempos()
+        
+        
         
         # Elementos da interface
         self.label_pergunta = tk.Label(root, text="", wraplength=500, font=("Arial", 14))
@@ -58,29 +62,53 @@ class QuizGame:
         else:
             messagebox.showerror("Erro", "Nenhuma pergunta encontrada para este nível!")
             self.root.quit()
-
+    def fechar_quiz(self):
+            """Fecha o quiz corretamente"""
+            if hasattr(self, 'timer') and self.timer:
+                self.root.after_cancel(self.timer)
+            self.root.destroy()
     def carregar_perguntas_do_banco(self):
         """Carrega perguntas do banco de dados baseado no nível selecionado"""
         try:
             conn = sqlite3.connect(caminho_completo)
             cursor = conn.cursor()
             
-            # Busca perguntas com a dificuldade e classe especificadas
-            # No método carregar_perguntas_do_banco(), modifique a query SQL para:
-            cursor.execute("""
-                SELECT pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
-                FROM Perguntas 
-                WHERE dificuldade_pergunta = ? AND classe_pergunta = ?
-                ORDER BY RANDOM()
-                LIMIT 10  # Limita a 10 perguntas por jogo
-            """, (self.dificuldade, self.classe))
-                        
+            # Query para buscar perguntas excluindo as já respondidas
+            if self.perguntas_anteriores:
+                placeholders = ','.join('?' * len(self.perguntas_anteriores))
+                query = f"""
+                    SELECT id_pergunta, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
+                    FROM Perguntas 
+                    WHERE dificuldade_pergunta = ? 
+                    AND classe_pergunta = ?
+                    AND id_pergunta NOT IN ({placeholders})
+                    ORDER BY RANDOM()
+                    LIMIT 10
+                """
+                params = [self.dificuldade, self.classe] + self.perguntas_anteriores
+            else:
+                query = """
+                    SELECT id_pergunta, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
+                    FROM Perguntas 
+                    WHERE dificuldade_pergunta = ? 
+                    AND classe_pergunta = ?
+                    ORDER BY RANDOM()
+                    LIMIT 10
+                """
+                params = [self.dificuldade, self.classe]
+            
+            cursor.execute(query, params)
+            
             perguntas = []
+            self.ids_perguntas_atual = []  # Armazena IDs das perguntas atuais
+            
             for row in cursor.fetchall():
+                self.ids_perguntas_atual.append(row[0])  # Armazena o ID
                 perguntas.append({
-                    "pergunta": row[0],
-                    "opcoes": [row[1], row[2], row[3], row[4]],
-                    "resposta": row[5]  # A, B, C ou D
+                    "id_pergunta": row[0],
+                    "pergunta": row[1],
+                    "opcoes": [row[2], row[3], row[4], row[5]],
+                    "resposta": row[6]
                 })
             
             conn.close()
@@ -88,7 +116,6 @@ class QuizGame:
         except Exception as e:
             messagebox.showerror("Erro", f"Falha ao carregar perguntas: {str(e)}")
             return []
-
     def definir_tempos(self):
         """Define os tempos baseados na dificuldade da pergunta"""
         # Quanto maior a dificuldade, menos tempo o jogador tem
@@ -169,19 +196,9 @@ class QuizGame:
             conn = sqlite3.connect(caminho_completo)
             cursor = conn.cursor()
             
-            # Obtém o ID da pergunta atual
-            cursor.execute("""
-                SELECT id_pergunta FROM Perguntas 
-                WHERE pergunta = ? AND classe_pergunta = ? AND dificuldade_pergunta = ?
-            """, (
-                self.perguntas[self.pergunta_atual]['pergunta'],
-                self.classe,
-                self.dificuldade
-            ))
+            id_pergunta = self.perguntas[self.pergunta_atual]['id_pergunta']
             
-            id_pergunta = cursor.fetchone()[0]
-            
-            # Insere ou ignora se já existir (devido à constraint UNIQUE)
+            # Insere ou ignora se já existir
             cursor.execute("""
                 INSERT OR IGNORE INTO Dados_do_jogador 
                 (id_turma, id_pergunta, acertou, tempo_resposta)
@@ -190,10 +207,13 @@ class QuizGame:
             
             conn.commit()
             conn.close()
+            
+            # Adiciona à lista de perguntas respondidas
+            if id_pergunta not in self.perguntas_anteriores:
+                self.perguntas_anteriores.append(id_pergunta)
+                
         except Exception as e:
             print(f"Erro ao salvar resposta: {e}")
-        self.pergunta_atual += 1
-        self.carregar_pergunta()
 
     def conceder_bonus(self):
         """Concede um bônus aleatório ao jogador"""
@@ -235,13 +255,16 @@ class QuizGame:
         
         if self.vidas <= 0:
             messagebox.showerror("Fim de Jogo", "Você perdeu todas as vidas!")
-            self.root.quit()
+            self.fechar_quiz()  # Usar fechar_quiz em vez de quit
         else:
             self.pergunta_atual += 1
             self.carregar_pergunta()
 
-    def carregar_perguntas_do_banco(self):
-        """Carrega perguntas do banco de dados baseado no nível selecionado"""
+    def carregar_pergunta(self):
+        if self.pergunta_atual >= len(self.perguntas):
+            messagebox.showinfo("Parabéns!", f"Você completou o quiz! Pontuação: {self.pontuacao}")
+            self.fechar_quiz()  # Usar fechar_quiz em vez de quit
+            return
         try:
             conn = sqlite3.connect(caminho_completo)
             cursor = conn.cursor()
