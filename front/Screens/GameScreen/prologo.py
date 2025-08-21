@@ -527,7 +527,7 @@ class MapScreen(QMainWindow):
             if hasattr(self, 'location_selected_signal'):
                 # Parse do nível para obter dificuldade e classe
                 try:
-                    dificuldade, classe = map(int, level.split('-'))
+                    dificuldade, classe = map(str, level.split('-'))
                     self.location_selected_signal.emit(location_name, dificuldade, classe)
                 except ValueError:
                     print(f"❌ Formato de nível inválido: {level}")
@@ -738,10 +738,10 @@ class GameManager(QMainWindow):
     def start_game(self):
         print("🎮 Iniciando o jogo...")
         # Importar e iniciar a nova tela de jogo
-        from game import GameScreen
+        from GameScreen import game
         
         # Criar e mostrar a tela de jogo
-        self.game_screen = GameScreen(parent=self)
+        self.game_screen = game(parent=self)
         self.game_screen.show()
         
         # Esconder o GameManager atual
