@@ -29,6 +29,7 @@ class GameScreen_Game(QMainWindow):
         self.npc_met = False
         
         self.trigger_zones = []
+        self.removed_triggers = set()  # Para rastrear triggers removidos
         self.is_transitioning = False
         self.fade_widget = None
         self.fade_animation = None
@@ -64,9 +65,9 @@ class GameScreen_Game(QMainWindow):
         
         self.load_trigger_config()
         self.setup_trigger_zones()  
+        self.setup_scenes()
         
     def setup_game_ui(self):
-        """Configura a interface principal do jogo"""
         self.setWindowTitle("Raízes Ocultas - Jogo")
         self.setFixedSize(1000, 700)
         
@@ -243,7 +244,7 @@ class GameScreen_Game(QMainWindow):
         self.narration_timer = QTimer()
         self.narration_timer.setSingleShot(True)
         self.narration_timer.timeout.connect(self.start_narration)
-        self.narration_timer.start(80000)  
+        self.narration_timer.start(5000)  
         
     def setup_background_image(self):
         self.background_image = QLabel(self.game_area)
@@ -273,7 +274,6 @@ class GameScreen_Game(QMainWindow):
         self.background_image.show()
         
     def setup_background_fade_timer(self):
-        """Configura o timer para iniciar o fade do fundo após 20 segundos"""
         self.background_fade_timer = QTimer()
         self.background_fade_timer.setSingleShot(True)
         self.background_fade_timer.timeout.connect(self.start_background_fade)
@@ -294,21 +294,17 @@ class GameScreen_Game(QMainWindow):
             print("🎨 Iniciando fade-in do fundo...")
         
     def start_narration(self):
-        """Inicia a narração do jogo"""
         if self.current_narration_index < len(self.narration_texts):
             self.show_narration_text(self.narration_texts[self.current_narration_index])
             self.current_narration_index += 1
             
-            # Timer para próximo texto (5 segundos)
             QTimer.singleShot(5000, self.start_narration)
         else:
-            # Fim da narração
             self.narration_label.setText("Caminhe até o canto inferior direito para seguir a trilha...")
             self.narration_finished = True
             print("📖 Narração finalizada - Trilha ativada!")
             
     def show_narration_text(self, text):
-        """Mostra um texto de narração"""
         self.narration_label.setText(text)
         
         # Efeito de fade in
@@ -317,7 +313,6 @@ class GameScreen_Game(QMainWindow):
         self.narration_animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         
     def keyPressEvent(self, event):
-        """Captura teclas pressionadas para movimentação e diálogo"""
         key = event.key()
         
         if self.in_dialog:
@@ -343,14 +338,12 @@ class GameScreen_Game(QMainWindow):
         super().keyPressEvent(event)
         
     def keyReleaseEvent(self, event):
-        """Captura teclas soltas"""
         key = event.key()
         if key in self.keys_pressed:
             self.keys_pressed.remove(key)
         super().keyReleaseEvent(event)
         
     def update_movement(self):
-        """Atualiza a posição do personagem baseado nas teclas pressionadas"""
         previous_state = self.current_state
         
         if not self.keys_pressed or self.in_dialog:
@@ -441,15 +434,15 @@ class GameScreen_Game(QMainWindow):
     def setup_npc(self):
         """Cria o NPC no final da trilha"""
         self.npc = QLabel(self.game_area)
-        self.npc.setFixedSize(60, 80)
+        self.npc.setFixedSize(120, 160)  # Aumentado de 60x80 para 120x160
         
         # Tentar carregar imagem do NPC
-        npc_image_path = "../../../assets/ScreenElements/gamescreen/NPCs/capivara-guia.png"
+        npc_image_path = "assets/ScreenElements/gamescreen/NPCs/espirito-serra.png"
         if os.path.exists(npc_image_path):
             pixmap = QPixmap(npc_image_path)
             if not pixmap.isNull():
                 scaled_pixmap = pixmap.scaled(
-                    60, 80, 
+                    120, 160,  # Aumentado para corresponder ao novo tamanho
                     Qt.AspectRatioMode.KeepAspectRatio, 
                     Qt.TransformationMode.SmoothTransformation
                 )
@@ -460,7 +453,7 @@ class GameScreen_Game(QMainWindow):
             self.setup_npc_placeholder()
         
         # Posicionar NPC fora da tela inicialmente (será revelado durante a trilha)
-        self.npc.move(self.game_area.width() + 100, 300)
+        self.npc.move(self.game_area.width() + 100, 200)  # Mudado de 300 para 200
         self.npc.show()
         
         # Animar NPC para entrar na tela após um tempo
@@ -484,8 +477,8 @@ class GameScreen_Game(QMainWindow):
         """Anima a entrada do NPC na tela"""
         if self.npc:
             # Posição final do NPC (centro-direita da tela)
-            final_x = self.game_area.width() - 150
-            final_y = 300
+            final_x = self.game_area.width() - 200  # Mais espaço devido ao tamanho maior
+            final_y = 250  # Posição mais central
             
             # Criar animação de movimento
             self.npc_animation = QPropertyAnimation(self.npc, b"pos")
@@ -502,16 +495,10 @@ class GameScreen_Game(QMainWindow):
         self.npc_met = True
         self.in_dialog = True
         
-        # Parar movimento de fundo
         self.trail_mode = False
         
-        # Mostrar diálogo
-        self.start_dialog()
-        
-        print("🤝 Encontrou o NPC!")
-        
+
     def start_dialog(self):
-        """Inicia o sistema de diálogo"""
         dialog_texts = [
             "Olá, jovem explorador! Bem-vindo às terras de Mato Grosso.",
             "Sou o Guardião das Raízes Ocultas.",
@@ -554,7 +541,6 @@ class GameScreen_Game(QMainWindow):
         self.dialog_box.show()
         
     def show_dialog_text(self):
-        """Mostra o texto atual do diálogo"""
         if self.current_dialog_index < len(self.dialog_texts):
             text = self.dialog_texts[self.current_dialog_index]
             self.dialog_box.setText(text)
@@ -562,12 +548,10 @@ class GameScreen_Game(QMainWindow):
             self.end_dialog()
             
     def next_dialog(self):
-        """Avança para o próximo texto do diálogo"""
         self.current_dialog_index += 1
         self.show_dialog_text()
         
     def end_dialog(self):
-        """Finaliza o diálogo"""
         if self.dialog_box:
             self.dialog_box.hide()
             self.dialog_box = None
@@ -577,7 +561,6 @@ class GameScreen_Game(QMainWindow):
         print("💬 Diálogo finalizado!")
         
     def return_to_map(self):
-        """Retorna para o mapa (GameManager)"""
         if self.parent_window and hasattr(self.parent_window, 'show_map'):
             self.close()
             self.parent_window.show_map()
@@ -585,17 +568,26 @@ class GameScreen_Game(QMainWindow):
             self.close()
             
     def setup_trigger_zones(self):
-        """Configura as zonas invisíveis de transição"""
         # PERSONALIZÁVEL: Modifique as coordenadas e tamanhos dos trigger points aqui
         self.trigger_zones = [
             {
                 'name': 'forest_entrance',
                 # FLORESTA MÍSTICA - Posição personalizável
-                'x': 700, 'y': 250, 'width': 80, 'height': 80,  # Zona quadrada no centro-superior esquerdo
-                'target_scene': 'forest',
-                'spawn_x': 800, 'spawn_y': 400,  # Onde o player aparece na nova cena
+                'x': 700, 'y': 250, 'width': 80, 'height': 80,  
+                'spawn_x': 800, 'spawn_y': 400,  
                 'description': 'Portal para a Floresta Mística',
-                'color': '#1a3d1a'  # Verde escuro para debug visual
+                'color': '#1a3d1a',  # Verde escuro para debug visual
+                'target_scene': 'forest'
+            },
+            {
+                'name': 'forest_secret_area',
+                'x': 250, 'y': 250, 'width': 60, 'height': 60,
+                'spawn_x': 200, 'spawn_y': 200,
+                'description': 'Área Secreta da Floresta',
+                'color': '#2d5a2d',  # Verde médio para debug visual
+                'target_scene': 'secret_cave',
+                'appears_in_scene': 'forest',  
+                'disappears_after_use': True  
             }
         ]
         
@@ -610,7 +602,7 @@ class GameScreen_Game(QMainWindow):
             },
             'forest': {
                 'background': "assets/ScreenElements/gamescreen/cerrado-background.png",
-                'npcs': [{'x': 300, 'y': 200, 'type': 'sage'}],
+                'npcs': [{'x': 400, 'y': 300, 'type': 'sage'}],
                 'description': 'Floresta mística'
             },
             'village': {
@@ -622,6 +614,11 @@ class GameScreen_Game(QMainWindow):
                 'background': "assets/ScreenElements/gamescreen/river-scene.png",
                 'npcs': [{'x': 200, 'y': 250, 'type': 'fisherman'}],
                 'description': 'Margens do rio'
+            },
+            'secret_cave': {
+                'background': "assets/ScreenElements/gamescreen/background/mt-forest.png",
+                'npcs': [{'x': 400, 'y': 300, 'type': 'ribeirinha'}],
+                'description': 'Caverna Secreta - Sem saídas visíveis'
             }
         }
         
@@ -630,12 +627,10 @@ class GameScreen_Game(QMainWindow):
         self.fade_widget.setFixedSize(1000, 550)
         self.fade_widget.setStyleSheet("background-color: black;")
         
-        # Efeito de opacidade
         self.fade_effect = QGraphicsOpacityEffect()
         self.fade_effect.setOpacity(0.0)  # Inicialmente transparente
         self.fade_widget.setGraphicsEffect(self.fade_effect)
         
-        # Posicionar acima de tudo
         self.fade_widget.raise_()
         self.fade_widget.show()
         
@@ -644,11 +639,26 @@ class GameScreen_Game(QMainWindow):
         char_center_y = player_y + self.character.height() // 2
         
         for zone in self.trigger_zones:
+            # Pular triggers que já foram removidos
+            if zone['name'] in self.removed_triggers:
+                continue
+                
+            # Pular triggers que não devem aparecer na cena atual
+            if zone.get('appears_in_scene') and zone['appears_in_scene'] != self.current_scene:
+                continue
+                
             if (zone['x'] <= char_center_x <= zone['x'] + zone['width'] and
                 zone['y'] <= char_center_y <= zone['y'] + zone['height']):
                 
                 # Ativar transição
                 self.start_scene_transition(zone)
+                
+                # Se o trigger deve desaparecer após o uso, marcá-lo como removido
+                if zone.get('disappears_after_use', False):
+                    self.removed_triggers.add(zone['name'])
+                    self.hide_trigger_debug_widget(zone['name'])
+                    self.narration_label.setText(f"{zone['description']} foi descoberta e desapareceu!")
+                    
                 break
                 
     def start_scene_transition(self, zone):
@@ -690,6 +700,16 @@ class GameScreen_Game(QMainWindow):
         # Criar novos NPCs da cena
         self.setup_scene_npcs(scene_data.get('npcs', []))
         
+        # Atualizar trigger debug visual para a nova cena
+        if self.show_trigger_debug:
+            # Limpar widgets existentes
+            for widget in getattr(self, 'trigger_debug_widgets', []):
+                widget.hide()
+                widget.deleteLater()
+            self.trigger_debug_widgets = []
+            # Recriar para a nova cena
+            self.setup_trigger_debug_visual()
+        
         # Fade in
         self.fade_in_animation = QPropertyAnimation(self.fade_effect, b"opacity")
         self.fade_in_animation.setDuration(800)
@@ -713,7 +733,8 @@ class GameScreen_Game(QMainWindow):
         scene_colors = {
             'forest': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #1a3d1a, stop:1 #2d5a2d);",
             'village': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #8B4513, stop:1 #D2691E);",
-            'river': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #1e3a5f, stop:1 #2e5a8f);"
+            'river': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #1e3a5f, stop:1 #2e5a8f);",
+            'secret_cave': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #2b1810, stop:1 #4a2c1a);"
         }
         
         color_style = scene_colors.get(self.current_scene, scene_colors.get('main', ""))
@@ -726,14 +747,15 @@ class GameScreen_Game(QMainWindow):
             
     def create_scene_npc(self, x, y, npc_type):
         npc = QLabel(self.game_area)
-        npc.setFixedSize(60, 80)
+        npc.setFixedSize(120, 160)  # Aumentado para consistência
         
         # Caminhos das imagens dos NPCs
         npc_images = {
             'sage': 'assets/ScreenElements/gamescreen/NPCs/espirito-serra.png',
             'elder': '👴',
             'fisherman': '🎣',
-            'capivara': '🦫'
+            'capivara': '🦫',
+            'ribeirinha': 'assets/ScreenElements/gamescreen/NPCs/parteira-ribeirinha.png'
         }
         
         npc_source = npc_images.get(npc_type, '🦫')
@@ -744,7 +766,7 @@ class GameScreen_Game(QMainWindow):
             pixmap = QPixmap(npc_source)
             if not pixmap.isNull():
                 scaled_pixmap = pixmap.scaled(
-                    60, 80, 
+                    120, 160,  # Aumentado para consistência
                     Qt.AspectRatioMode.KeepAspectRatio, 
                     Qt.TransformationMode.SmoothTransformation
                 )
@@ -843,14 +865,22 @@ class GameScreen_Game(QMainWindow):
         self.narration_label.setText("NPC detectado! Diálogo iniciado automaticamente.")
         
     def setup_trigger_debug_visual(self):
-
         self.trigger_debug_widgets = []
         
         if self.show_trigger_debug:
             for zone in self.trigger_zones:
+                # Pular triggers que foram removidos
+                if zone['name'] in self.removed_triggers:
+                    continue
+                    
+                # Pular triggers que não devem aparecer na cena atual
+                if zone.get('appears_in_scene') and zone['appears_in_scene'] != self.current_scene:
+                    continue
+                    
                 debug_widget = QLabel(self.game_area)
                 debug_widget.setFixedSize(zone['width'], zone['height'])
                 debug_widget.move(zone['x'], zone['y'])
+                debug_widget.setObjectName(f"debug_{zone['name']}")  # Nome para identificação
                 
                 # Estilo visual para debug
                 debug_widget.setStyleSheet(f"""
@@ -873,6 +903,15 @@ class GameScreen_Game(QMainWindow):
                 
                 debug_widget.show()
                 self.trigger_debug_widgets.append(debug_widget)
+    
+    def hide_trigger_debug_widget(self, zone_name):
+        """Remove o widget de debug visual para um trigger específico"""
+        for widget in self.trigger_debug_widgets[:]:  # Usar slice para evitar problemas de modificação durante iteração
+            if widget.objectName() == f"debug_{zone_name}":
+                widget.hide()
+                widget.deleteLater()
+                self.trigger_debug_widgets.remove(widget)
+                break
     
     def toggle_trigger_debug(self):
         self.show_trigger_debug = not self.show_trigger_debug
