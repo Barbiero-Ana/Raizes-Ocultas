@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QCursor, QFontDatabase, QFont
 from PyQt6.QtCore import Qt
 import os
-from tela_das_turmas import ListarTurmasDialog
+from front.Screens.listar_turmas_screen import ListarTurmasDialog
 try:
     from class_register_screen import ClassRegisterDialog
 except ImportError:

@@ -567,11 +567,17 @@ class MapScreen(QMainWindow):
         self.menu_screen.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.menu_screen.show()
 
+# No arquivo prologo.py, modifique a classe GameManager:
+
 class GameManager(QMainWindow):
-    def __init__(self, original_game_screen=None, tela_login=None, id_usuario=None):
+    def __init__(self, original_game_screen=None, tela_login=None, id_usuario=None, id_turma=None):
         super().__init__()
         self.setWindowTitle("Raízes Ocultas")
         self.setFixedSize(1000, 700)
+        
+        # Armazenar o ID da turma
+        self.id_turma = id_turma
+        print(f"🎮 Turma selecionada: {self.id_turma}")
         
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
@@ -596,6 +602,7 @@ class GameManager(QMainWindow):
         
         self.show_prologue()
     
+
     def load_fonts(self):
         font_paths = {
             "titulo": "assets/fonts/Ghost theory 2.ttf",

@@ -1,7 +1,7 @@
 # Crie um novo arquivo listar_turmas_screen.py
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPushButton, 
-    QScrollArea, QWidget, QMessageBox,QHBoxLayout,QButtonGroup,
+    QScrollArea, QWidget, QMessageBox, QHBoxLayout, QButtonGroup,
     QRadioButton
 )
 from PyQt6.QtCore import Qt
@@ -13,6 +13,7 @@ class ListarTurmasDialog(QDialog):
         self.setFixedSize(500, 400)
         self.id_usuario = id_usuario
         self.turma_selecionada = None
+        self.parent = parent  # Armazenar referência ao parent
         
         # Layout principal
         layout = QVBoxLayout()
@@ -98,12 +99,47 @@ class ListarTurmasDialog(QDialog):
     
     def selecionar_turma(self):
         if self.turma_selecionada:
-            self.accept()  # Fecha o diálogo com resultado positivo
+            # Fecha o diálogo com resultado positivo
+            self.accept()
+            
+            # Chama o GameManager com o ID da turma selecionada
+            self.iniciar_game_manager(self.turma_selecionada)
         else:
             QMessageBox.warning(self, "Aviso", "Selecione uma turma para continuar")
+    
+    def iniciar_game_manager(self, turma_id):
+        """Inicia o GameManager com o ID da turma selecionada"""
+        try:
+            # Importar e criar o GameManager
+            from front.Screens.GameScreen.prologo import GameManager
+            
+            # Criar instância do GameManager passando o ID da turma
+            game_manager = GameManager(
+                original_game_screen=self.parent,
+                tela_login=None,  # Ajuste conforme necessário
+                id_usuario=self.id_usuario,
+                id_turma=turma_id  # Novo parâmetro
+            )
+            
+            # Fechar a tela atual (se necessário)
+            if self.parent:
+                self.parent.hide()
+            
+            # Mostrar o GameManager
+            game_manager.show()
+            
+        except ImportError as e:
+            QMessageBox.critical(self, "Erro", f"Erro ao iniciar o jogo: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Erro inesperado: {str(e)}")
     
     @staticmethod
     def get_turma_selecionada(parent=None, id_usuario=None):
         dialog = ListarTurmasDialog(parent, id_usuario)
         result = dialog.exec()
-        return dialog.turma_selecionada if result == QDialog.DialogCode.Accepted else None
+        
+        if result == QDialog.DialogCode.Accepted:
+            # Retorna tanto o ID da turma quanto a instância do diálogo
+            return dialog.turma_selecionada, dialog
+        else:
+            return None, None
