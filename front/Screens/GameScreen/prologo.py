@@ -645,7 +645,7 @@ class GameManager(QMainWindow):
         self.show_prologue()
 
         self.map_screen.location_selected_signal.connect(self.iniciar_quiz)
-        
+    
     def iniciar_quiz(self, location_name, dificuldade, classe):
         """Inicia o quiz com os parâmetros da fase selecionada"""
         print(f"🎮 Iniciando quiz: {location_name}, Dificuldade: {dificuldade}, Classe: {classe}")
@@ -654,35 +654,48 @@ class GameManager(QMainWindow):
         perguntas_respondidas = self.obter_perguntas_respondidas()
         
         try:
-            # Executar o quiz em um processo separado
-            import subprocess
-            import sys
+            # Importar e criar o quiz - AGORA DIRETAMENTE EM PyQt6
+            from backend.jogo import QuizGame
             
-            args = [
-                sys.executable, "quiz_launcher.py",
-                str(dificuldade), str(classe), 
-                str(self.id_turma) if self.id_turma else "None",
-                str(perguntas_respondidas)
-            ]
+            # Criar o quiz diretamente como widget PyQt6
+            quiz_game = QuizGame(
+                parent=self,  # Parent é o GameManager
+                nivel=f"{dificuldade}-{classe}", 
+                id_turma=self.id_turma,
+                perguntas_anteriores=perguntas_respondidas
+            )
             
-            self.quiz_process = subprocess.Popen(args)
+            # Configurar a janela do quiz
+            quiz_game.setWindowTitle(f"Quiz - {location_name}")
+            quiz_game.setGeometry(100, 100, 800, 600)
+            
+            # Centralizar na tela
+            screen_geometry = QApplication.primaryScreen().geometry()
+            x = (screen_geometry.width() - 800) // 2
+            y = (screen_geometry.height() - 600) // 2
+            quiz_game.move(x, y)
+            
+            # Conectar sinal de fechamento
+            quiz_game.destroyed.connect(self.ao_fechar_quiz)
+            
+            # Esconder a janela do mapa temporariamente
+            self.hide()
+            
+            # Mostrar o quiz
+            quiz_game.show()
             
         except Exception as e:
             print(f"❌ Erro ao iniciar quiz: {e}")
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.critical(self, "Erro", f"Não foi possível iniciar o quiz: {str(e)}")
 
-    def ao_fechar_quiz(self, quiz_root):
+    def ao_fechar_quiz(self):
         """Chamado quando o quiz é fechado"""
-        try:
-            quiz_root.destroy()
-            # Mostrar novamente a janela do mapa
-            self.show()
-            self.raise_()  # Traz para frente
-            self.activateWindow()  # Ativa a janela
-        except:
-            pass
-    
+        # Mostrar novamente a janela do mapa
+        self.show()
+        self.raise_()  # Traz para frente
+        self.activateWindow()  # Ativa a janela
+        
     def obter_perguntas_respondidas(self):
         pasta_db = "database"
         nome_banco = "raizes_ocultas.db"

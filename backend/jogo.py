@@ -1,104 +1,94 @@
-import tkinter as tk
-from tkinter import messagebox
-import threading
+import sys
 import sqlite3
 import os
 import random
-import time
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox
+)
+from PyQt6.QtCore import QTimer, Qt
 
 # Configurações do banco de dados
 pasta_db = "database"
 nome_banco = "raizes_ocultas.db"
 caminho_completo = os.path.join(pasta_db, nome_banco)
 
-class QuizGame:
-    def __init__(self, root, nivel=None, id_turma=None, perguntas_anteriores=None):
-        self.root = root
-        self.root.title("Quiz Game - Raízes Ocultas")
-        self.root.geometry("800x600")
-        self.root.configure(bg="#f0f0f0")
+class QuizGame(QWidget):
+    def __init__(self, parent=None, nivel=None, id_turma=None, perguntas_anteriores=None):
+        super().__init__(parent)
+        # Resto do código permanece o mesmo...
+        super().__init__()
+        self.setWindowTitle("Quiz Game - Raízes Ocultas")
+        self.setGeometry(200, 100, 800, 600)
         self.pergunta_atual = 0
         self.pontuacao = 0
         self.vidas = 3
-        self.timer = None
         self.tempo_restante = 0
         self.nivel = nivel
         self.respostas_corretas_consecutivas = 0
         self.tempo_respostas = []
         self.bonus_disponivel = False
         self.id_turma = id_turma
-        self.perguntas_anteriores = perguntas_anteriores or []  # IDs das perguntas já respondidas
-        self.root.protocol("WM_DELETE_WINDOW", self.fechar_quiz)
-        
-        # Parse do nível para obter dificuldade e classe
+        self.perguntas_anteriores = perguntas_anteriores or []
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.atualizar_timer)
+
         if nivel and '-' in nivel:
             self.dificuldade, self.classe = map(int, nivel.split('-'))
         else:
-            # Valores padrão se não for fornecido
             self.dificuldade, self.classe = 1, 1
-        
-        # Elementos da interface (criar primeiro para evitar erros)
+
         self.setup_ui()
-        
-        # Carrega as perguntas do banco de dados
         self.perguntas = self.carregar_perguntas_do_banco()
-        
+
         if not self.perguntas:
-            messagebox.showerror("Erro", "Nenhuma pergunta encontrada para este nível!")
-            self.root.after(1000, self.fechar_quiz)
+            QMessageBox.critical(self, "Erro", "Nenhuma pergunta encontrada para este nível!")
+            self.close()
             return
-        
-        # Configura os tempos baseados na dificuldade
+
         self.TEMPOS = self.definir_tempos()
-        
-        # Agora carrega a primeira pergunta
         self.carregar_pergunta()
 
     def setup_ui(self):
-        """Configura os elementos da interface"""
-        self.label_pergunta = tk.Label(self.root, text="Carregando perguntas...", wraplength=500, font=("Arial", 14))
-        self.label_pergunta.pack(pady=20)
+        layout = QVBoxLayout()
+
+        self.label_pergunta = QLabel("Carregando perguntas...")
+        self.label_pergunta.setWordWrap(True)
+        self.label_pergunta.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label_pergunta.setStyleSheet("font-size: 16px;")
+        layout.addWidget(self.label_pergunta)
 
         self.botoes = []
         for i in range(4):
-            btn = tk.Button(self.root, text="", width=25, font=("Arial", 12), 
-                          command=lambda i=i: self.verificar_resposta(i), state=tk.DISABLED)
-            btn.pack(pady=5)
+            btn = QPushButton("")
+            btn.setFixedWidth(400)
+            btn.setStyleSheet("font-size: 14px; padding: 8px;")
+            btn.clicked.connect(lambda _, i=i: self.verificar_resposta(i))
+            layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
             self.botoes.append(btn)
 
-        self.label_timer = tk.Label(self.root, text="Tempo: --", font=("Arial", 12))
-        self.label_timer.pack(pady=10)
+        info_layout = QHBoxLayout()
+        self.label_timer = QLabel("Tempo: --")
+        self.label_vidas = QLabel(f"Vidas: {self.vidas}")
+        info_layout.addWidget(self.label_timer)
+        info_layout.addWidget(self.label_vidas)
+        layout.addLayout(info_layout)
 
-        self.label_vidas = tk.Label(self.root, text="Vidas: 3", font=("Arial", 12))
-        self.label_vidas.pack()
-
-    def fechar_quiz(self):
-        """Fecha o quiz corretamente"""
-        if hasattr(self, 'timer') and self.timer:
-            self.root.after_cancel(self.timer)
-        self.root.destroy()
+        self.setLayout(layout)
 
     def carregar_perguntas_do_banco(self):
-        """Carrega perguntas do banco de dados baseado no nível selecionado"""
         try:
             conn = sqlite3.connect(caminho_completo)
             cursor = conn.cursor()
-            
-            # Primeiro, verifique se existem perguntas para este nível
+
             cursor.execute("""
                 SELECT COUNT(*) FROM Perguntas 
                 WHERE dificuldade_pergunta = ? AND classe_pergunta = ?
             """, (self.dificuldade, self.classe))
-            
             total_perguntas = cursor.fetchone()[0]
-            print(f"Total de perguntas para nível {self.dificuldade}-{self.classe}: {total_perguntas}")
-            
             if total_perguntas == 0:
-                messagebox.showerror("Erro", f"Nenhuma pergunta encontrada para o nível {self.dificuldade}-{self.classe}!")
                 conn.close()
                 return []
-            
-            # Query para buscar perguntas excluindo as já respondidas
+
             if self.perguntas_anteriores:
                 placeholders = ','.join('?' * len(self.perguntas_anteriores))
                 query = f"""
@@ -121,95 +111,73 @@ class QuizGame:
                     LIMIT 10
                 """
                 params = [self.dificuldade, self.classe]
-            
+
             cursor.execute(query, params)
-            
             perguntas = []
-            self.ids_perguntas_atual = []  # Armazena IDs das perguntas atuais
-            
+            self.ids_perguntas_atual = []
+
             for row in cursor.fetchall():
-                self.ids_perguntas_atual.append(row[0])  # Armazena o ID
+                self.ids_perguntas_atual.append(row[0])
                 perguntas.append({
                     "id_pergunta": row[0],
                     "pergunta": row[1],
                     "opcoes": [row[2], row[3], row[4], row[5]],
                     "resposta": row[6]
                 })
-            
-            print(f"Perguntas carregadas: {len(perguntas)}")
+
             conn.close()
             return perguntas
-            
+
         except Exception as e:
-            messagebox.showerror("Erro", f"Falha ao carregar perguntas: {str(e)}")
-            print(f"Erro detalhado: {e}")
+            QMessageBox.critical(self, "Erro", f"Falha ao carregar perguntas: {str(e)}")
             return []
 
     def definir_tempos(self):
-        """Define os tempos baseados na dificuldade da pergunta"""
-        # Quanto maior a dificuldade, menos tempo o jogador tem
-        tempos_base = {
-            1: 120,  # Fácil - mais tempo
-            2: 90,
-            3: 60,
-            4: 30    # Difícil - menos tempo
-        }
+        tempos_base = {1: 120, 2: 90, 3: 60, 4: 30}
         return [tempos_base[self.dificuldade]] * len(self.perguntas)
 
     def carregar_pergunta(self):
         if self.pergunta_atual >= len(self.perguntas):
-            messagebox.showinfo("Parabéns!", f"Você completou o quiz! Pontuação: {self.pontuacao}")
-            self.fechar_quiz()
+            QMessageBox.information(self, "Parabéns!", f"Você completou o quiz! Pontuação: {self.pontuacao}")
+            self.close()
             return
 
         p = self.perguntas[self.pergunta_atual]
-        self.label_pergunta.config(text=f"{self.pergunta_atual+1}. {p['pergunta']}")
-        
-        # Mapeia as opções para os botões
-        opcoes_mapeadas = {
-            'A': p['opcoes'][0],
-            'B': p['opcoes'][1],
-            'C': p['opcoes'][2],
-            'D': p['opcoes'][3]
-        }
-        
+        self.label_pergunta.setText(f"{self.pergunta_atual+1}. {p['pergunta']}")
+
         for i, letra in enumerate(['A', 'B', 'C', 'D']):
-            self.botoes[i].config(text=opcoes_mapeadas[letra], state=tk.NORMAL)
+            self.botoes[i].setText(p['opcoes'][i])
+            self.botoes[i].setEnabled(True)
 
         self.tempo_restante = self.TEMPOS[self.pergunta_atual]
         self.atualizar_timer()
+        self.timer.start(1000)
 
     def atualizar_timer(self):
-        self.label_timer.config(text=f"Tempo restante: {self.tempo_restante} segundos")
+        self.label_timer.setText(f"Tempo restante: {self.tempo_restante} segundos")
         if self.tempo_restante <= 0:
             self.perde_vida("Tempo esgotado!")
             return
-
         self.tempo_restante -= 1
-        self.timer = self.root.after(1000, self.atualizar_timer)
 
     def verificar_resposta(self, indice):
-        if hasattr(self, 'timer') and self.timer:
-            self.root.after_cancel(self.timer)
-        
+        self.timer.stop()
+
         tempo_gasto = self.TEMPOS[self.pergunta_atual] - self.tempo_restante
         letra_selecionada = ['A', 'B', 'C', 'D'][indice]
         resposta_correta = self.perguntas[self.pergunta_atual]['resposta']
         acertou = letra_selecionada == resposta_correta
-        
-        # Salva a resposta no banco de dados
+
         self.salvar_resposta_turma(acertou, tempo_gasto)
-        
+
         if acertou:
             self.pontuacao += 1
             self.respostas_corretas_consecutivas += 1
             mensagem = "Você acertou!"
-            
             if self.respostas_corretas_consecutivas >= 3 and tempo_gasto < (self.TEMPOS[self.pergunta_atual] / 2):
                 self.conceder_bonus()
                 mensagem += "\n\nVocê ganhou um bônus especial!"
-            
-            messagebox.showinfo("Correto!", mensagem)
+            QMessageBox.information(self, "Correto!", mensagem)
         else:
             self.respostas_corretas_consecutivas = 0
             self.perde_vida("Resposta incorreta!")
@@ -221,73 +189,53 @@ class QuizGame:
     def salvar_resposta_turma(self, acertou, tempo_gasto):
         if not self.id_turma:
             return
-            
         try:
             conn = sqlite3.connect(caminho_completo)
             cursor = conn.cursor()
-            
             id_pergunta = self.perguntas[self.pergunta_atual]['id_pergunta']
-            
-            # Insere ou ignora se já existir
             cursor.execute("""
                 INSERT OR IGNORE INTO Dados_do_jogador 
                 (id_turma, id_pergunta, acertou, tempo_resposta)
                 VALUES (?, ?, ?, ?)
             """, (self.id_turma, id_pergunta, int(acertou), tempo_gasto))
-            
             conn.commit()
             conn.close()
-            
-            # Adiciona à lista de perguntas respondidas
             if id_pergunta not in self.perguntas_anteriores:
                 self.perguntas_anteriores.append(id_pergunta)
-                
         except Exception as e:
             print(f"Erro ao salvar resposta: {e}")
 
     def conceder_bonus(self):
-        """Concede um bônus aleatório ao jogador"""
-        self.respostas_corretas_consecutivas = 0  # Reseta o contador
-        
-        # Tipos de bônus disponíveis
-        bonus = random.choice([
-            "vida_extra",
-            "segunda_chance",
-            "tempo_extra"
-        ])
-        
+        self.respostas_corretas_consecutivas = 0
+        bonus = random.choice(["vida_extra", "segunda_chance", "tempo_extra"])
+
         if bonus == "vida_extra":
             self.vidas += 1
-            self.label_vidas.config(text=f"Vidas: {self.vidas}")
-            messagebox.showinfo("Bônus!", "Você ganhou uma vida extra!")
-        
+            self.label_vidas.setText(f"Vidas: {self.vidas}")
+            QMessageBox.information(self, "Bônus!", "Você ganhou uma vida extra!")
         elif bonus == "segunda_chance":
             self.bonus_disponivel = True
-            messagebox.showinfo("Bônus!", "Você ganhou uma segunda chance! Poderá tentar novamente se errar a próxima pergunta.")
-        
+            QMessageBox.information(self, "Bônus!", "Você ganhou uma segunda chance!")
         elif bonus == "tempo_extra":
-            # Adiciona 10 segundos à próxima pergunta
             if self.pergunta_atual + 1 < len(self.TEMPOS):
                 self.TEMPOS[self.pergunta_atual + 1] += 10
-            messagebox.showinfo("Bônus!", "Você ganhou +10 segundos para a próxima pergunta!")
+            QMessageBox.information(self, "Bônus!", "Você ganhou +10 segundos na próxima pergunta!")
 
     def perde_vida(self, motivo):
         if self.bonus_disponivel:
             self.bonus_disponivel = False
-            messagebox.showinfo("Segunda Chance", "Você usou seu bônus de segunda chance!")
+            QMessageBox.information(self, "Segunda Chance", "Você usou seu bônus!")
             self.pergunta_atual += 1
             self.carregar_pergunta()
             return
-            
+
         self.vidas -= 1
-        self.label_vidas.config(text=f"Vidas: {self.vidas}")
-        messagebox.showwarning("Erro!", f"{motivo} Você perdeu uma vida.")
-        
+        self.label_vidas.setText(f"Vidas: {self.vidas}")
+        QMessageBox.warning(self, "Erro!", f"{motivo} Você perdeu uma vida.")
+
         if self.vidas <= 0:
-            messagebox.showerror("Fim de Jogo", "Você perdeu todas as vidas!")
-            self.fechar_quiz()
+            QMessageBox.critical(self, "Fim de Jogo", "Você perdeu todas as vidas!")
+            self.close()
         else:
             self.pergunta_atual += 1
             self.carregar_pergunta()
-
-# Remova o método duplicado carregar_perguntas_do_banco que está no final do arquivo    
