@@ -106,12 +106,12 @@ class FontManager:
                 print(f"   ... e mais {len(families) - 10} fontes")
 
 class MapButton(QPushButton):
-    location_clicked = pyqtSignal(str, int)  
+    location_clicked = pyqtSignal(str, str)  # Agora ambos são strings: nome e nível
     
-    def __init__(self, location_name: str, level: int, x: int, y: int, parent=None):
+    def __init__(self, location_name: str, level: str, x: int, y: int, parent=None):
         super().__init__(parent)
         self.location_name = location_name
-        self.level = level
+        self.level = level  # Isso deve ser uma string como "1-1"
         self.setFixedSize(40, 40)
         self.move(x, y)
         
@@ -136,12 +136,15 @@ class MapButton(QPushButton):
             }}
         """)
         
-        self.setText(str(level))
+        # Mostrar apenas o número do nível (ex: "1" em vez de "1-1")
+        level_number = level.split('-')[0] if '-' in level else level
+        self.setText(level_number)
+        
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.clicked.connect(self.on_clicked)
-        
+    
     def on_clicked(self):
-        self.location_clicked.emit(self.location_name, self.level)
+        self.location_clicked.emit(self.location_name, self.level)  # Emitir o nível completo
 
 class MenuScreen(QMainWindow):
     
@@ -520,68 +523,74 @@ class MapScreen(QMainWindow):
                 map_button.setFont(button_font)
 
     def on_location_selected(self, location_name: str, level: str):
-            print(f"🗺️ Local selecionado: {location_name} (Nível {level})")        
-            self.show_location_info(location_name, level)
-            
-            # Emitir sinal com informações da fase selecionada
-            if hasattr(self, 'location_selected_signal'):
-                # Parse do nível para obter dificuldade e classe
-                try:
-                    dificuldade, classe = map(str, level.split('-'))
+        print(f"🗺️ Local selecionado: {location_name} (Nível {level})")        
+        self.show_location_info(location_name, level)
+        
+        # Emitir sinal com informações da fase selecionada
+        if hasattr(self, 'location_selected_signal'):
+            # Parse do nível para obter dificuldade e classe
+            try:
+                if '-' in level:
+                    dificuldade, classe = map(int, level.split('-'))
                     self.location_selected_signal.emit(location_name, dificuldade, classe)
-                except ValueError:
-                    print(f"❌ Formato de nível inválido: {level}")
-
+                else:
+                    # Se não tiver formato correto, usar valores padrão
+                    print(f"⚠️ Formato de nível inválido: {level}, usando padrão (1,1)")
+                    self.location_selected_signal.emit(location_name, 1, 1)
+            except ValueError as e:
+                print(f"❌ Erro ao parsear nível {level}: {e}")
+                # Usar valores padrão em caso de erro
+                self.location_selected_signal.emit(location_name, 1, 1)
     def show_location_info(self, location_name: str, level: str):
-        if hasattr(self, 'info_popup') and self.info_popup:
-            self.info_popup.hide()
-            self.info_popup.deleteLater()        
-        self.info_popup = QLabel(f"📍 {location_name}\n🎯 Nível: {level}\n🎮 Local disponível!", self.map_area)
-        self.info_popup.setGeometry(350, 150, 300, 120)
-        self.info_popup.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        if self.font_manager:
-            info_font = self.font_manager.get_font("narração", size=14, bold=True)
-            self.info_popup.setFont(info_font)
-        
-        self.info_popup.setStyleSheet("""
-            QLabel {
-                background: rgba(139, 69, 19, 0.95);
-                color: #FFD700;
-                padding: 15px;
-                border-radius: 15px;
-                border: 3px solid #FFD700;
-                text-align: center;
-                font-weight: bold;
-            }
-        """)
-        
-        self.info_popup.show()
-        # Auto-ocultar após 4 segundos
-        QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
-        
-        # Retornar o nível para ser usado no QuizGame
-        return level
-        if self.font_manager:
-            info_font = self.font_manager.get_font("narração", size=14, bold=True)
-            self.info_popup.setFont(info_font)
-        
-        self.info_popup.setStyleSheet("""
-            QLabel {
-                background: rgba(139, 69, 19, 0.95);
-                color: #FFD700;
-                padding: 15px;
-                border-radius: 15px;
-                border: 3px solid #FFD700;
-                text-align: center;
-                font-weight: bold;
-            }
-        """)
-        
-        self.info_popup.show()
-        # Auto-ocultar -> 3000 = 3 segundos (presta atenção nisso ANAAAAAAAAA)
-        QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
-    
+            if hasattr(self, 'info_popup') and self.info_popup:
+                self.info_popup.hide()
+                self.info_popup.deleteLater()        
+            self.info_popup = QLabel(f"📍 {location_name}\n🎯 Nível: {level}\n🎮 Local disponível!", self.map_area)
+            self.info_popup.setGeometry(350, 150, 300, 120)
+            self.info_popup.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            if self.font_manager:
+                info_font = self.font_manager.get_font("narração", size=14, bold=True)
+                self.info_popup.setFont(info_font)
+            
+            self.info_popup.setStyleSheet("""
+                QLabel {
+                    background: rgba(139, 69, 19, 0.95);
+                    color: #FFD700;
+                    padding: 15px;
+                    border-radius: 15px;
+                    border: 3px solid #FFD700;
+                    text-align: center;
+                    font-weight: bold;
+                }
+            """)
+            
+            self.info_popup.show()
+            # Auto-ocultar após 4 segundos
+            QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)        
+            
+            if self.font_manager:
+                info_font = self.font_manager.get_font("narração", size=14, bold=True)
+                self.info_popup.setFont(info_font)
+            
+            self.info_popup.setStyleSheet("""
+                QLabel {
+                    background: rgba(139, 69, 19, 0.95);
+                    color: #FFD700;
+                    padding: 15px;
+                    border-radius: 15px;
+                    border: 3px solid #FFD700;
+                    text-align: center;
+                    font-weight: bold;
+                }
+            """)
+            
+            self.info_popup.show()
+            # Auto-ocultar -> 3000 = 3 segundos (presta atenção nisso ANAAAAAAAAA)
+            QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
+
+            # Retornar o nível para ser usado no QuizGame
+            return level
     def show_menu(self):
         """Abre a tela de menu"""
         # Obter referência do game_screen através do parent (GameManager)

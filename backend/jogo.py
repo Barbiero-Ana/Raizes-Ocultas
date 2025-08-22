@@ -13,7 +13,7 @@ nome_banco = "raizes_ocultas.db"
 caminho_completo = os.path.join(pasta_db, nome_banco)
 
 class QuizGame:
-    def __init__(self, root, nivel="1-1", id_turma=None, perguntas_anteriores=None):
+    def __init__(self, root, nivel=None, id_turma=None, perguntas_anteriores=None):
         self.root = root
         self.root.title("Quiz Game - Raízes Ocultas")
         self.root.geometry("800x600")
@@ -259,55 +259,83 @@ class QuizGame:
         else:
             self.pergunta_atual += 1
             self.carregar_pergunta()
-
-    def carregar_pergunta(self):
-        if self.pergunta_atual >= len(self.perguntas):
-            messagebox.showinfo("Parabéns!", f"Você completou o quiz! Pontuação: {self.pontuacao}")
-            self.fechar_quiz()  # Usar fechar_quiz em vez de quit
-            return
-        try:
-            conn = sqlite3.connect(caminho_completo)
-            cursor = conn.cursor()
-            
-            # Primeiro, verifique quais perguntas existem
-            cursor.execute("SELECT DISTINCT dificuldade_pergunta, classe_pergunta FROM Perguntas")
-            niveis_disponiveis = cursor.fetchall()
-            print("Níveis disponíveis no banco:", niveis_disponiveis)
-            
-            # Sua query original continua aqui...
-            cursor.execute("""
-                SELECT pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
-                FROM Perguntas 
-                WHERE dificuldade_pergunta = ? AND classe_pergunta = ?
-                ORDER BY RANDOM()
-            """, (self.dificuldade, self.classe))
-            
-            perguntas = []
-            for row in cursor.fetchall():
-                perguntas.append({
-                    "pergunta": row[0],
-                    "opcoes": [row[1], row[2], row[3], row[4]],
-                    "resposta": row[5]
-                })
-            
-            print(f"Encontradas {len(perguntas)} perguntas para dificuldade {self.dificuldade} e classe {self.classe}")
+def carregar_perguntas_do_banco(self):
+    """Carrega perguntas do banco de dados baseado no nível selecionado"""
+    try:
+        conn = sqlite3.connect(caminho_completo)
+        cursor = conn.cursor()
+        
+        # Primeiro, verifique se existem perguntas para este nível
+        cursor.execute("""
+            SELECT COUNT(*) FROM Perguntas 
+            WHERE dificuldade_pergunta = ? AND classe_pergunta = ?
+        """, (self.dificuldade, self.classe))
+        
+        total_perguntas = cursor.fetchone()[0]
+        print(f"Total de perguntas para nível {self.dificuldade}-{self.classe}: {total_perguntas}")
+        
+        if total_perguntas == 0:
+            messagebox.showerror("Erro", f"Nenhuma pergunta encontrada para o nível {self.dificuldade}-{self.classe}!")
             conn.close()
-            return perguntas
-        except Exception as e:
-            messagebox.showerror("Erro", f"Falha ao carregar perguntas: {str(e)}")
             return []
-
-if __name__ == "__main__":
-    root = tk.Tk()
+        
+        # Query para buscar perguntas excluindo as já respondidas
+        if self.perguntas_anteriores:
+            placeholders = ','.join('?' * len(self.perguntas_anteriores))
+            query = f"""
+                SELECT id_pergunta, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
+                FROM Perguntas 
+                WHERE dificuldade_pergunta = ? 
+                AND classe_pergunta = ?
+                AND id_pergunta NOT IN ({placeholders})
+                ORDER BY RANDOM()
+                LIMIT 10
+            """
+            params = [self.dificuldade, self.classe] + self.perguntas_anteriores
+        else:
+            query = """
+                SELECT id_pergunta, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
+                FROM Perguntas 
+                WHERE dificuldade_pergunta = ? 
+                AND classe_pergunta = ?
+                ORDER BY RANDOM()
+                LIMIT 10
+            """
+            params = [self.dificuldade, self.classe]
+        
+        cursor.execute(query, params)
+        
+        perguntas = []
+        self.ids_perguntas_atual = []  # Armazena IDs das perguntas atuais
+        
+        for row in cursor.fetchall():
+            self.ids_perguntas_atual.append(row[0])  # Armazena o ID
+            perguntas.append({
+                "id_pergunta": row[0],
+                "pergunta": row[1],
+                "opcoes": [row[2], row[3], row[4], row[5]],
+                "resposta": row[6]
+            })
+        
+        print(f"Perguntas carregadas: {len(perguntas)}")
+        conn.close()
+        return perguntas
+        
+    except Exception as e:
+        messagebox.showerror("Erro", f"Falha ao carregar perguntas: {str(e)}")
+        return []
+# if __name__ == "__main__":
+#     root = tk.Tk()
     
-    # Exemplos corretos:
-    # Ato I (Classe 5) - Fase Fácil (Dificuldade 1)
-    # jogo = QuizGame(root, nivel="1-5")  # Dificuldade 1, Classe 5
+#     # Exemplos corretos:
+#     # Ato I (Classe 5) - Fase Fácil (Dificuldade 1)
+#     # jogo = QuizGame(root, nivel="1-5")  # Dificuldade 1, Classe 5
     
-    # Ato II (Classe 4) - Fase Média (Dificuldade 2)
-    jogo = QuizGame(root, nivel="2-4")
+#     # Ato II (Classe 4) - Fase Média (Dificuldade 2)
+#     #jogo = QuizGame(root, nivel="2-4")
     
-    # Ato III (Classe 3) - Fase Difícil (Dificuldade 3)
-    # jogo = QuizGame(root, nivel="3-3")
+#     # Ato III (Classe 3) - Fase Difícil (Dificuldade 3)
+#     # jogo = QuizGame(root, nivel="3-3")
     
-    root.mainloop()
+    
+#     root.mainloop()
