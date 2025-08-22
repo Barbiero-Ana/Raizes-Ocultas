@@ -488,10 +488,10 @@ class MapScreen(QMainWindow):
 
         locations = [
             # Lado esquerdo (aldeias indígenas)
-            {"name": "Aldeia Bororo", "level": "1-1", "x": 225, "y": 240},
-            {"name": "Aldeia Xavante", "level": "1-2", "x": 180, "y": 230},
-            {"name": "Aldeia Karajá", "level": "1-3", "x": 160, "y": 300},
-            {"name": "Aldeia Terena", "level": "1-4", "x": 180, "y": 370},
+            {"name": "Aldeia Bororo", "level": "1-5", "x": 225, "y": 240},
+            {"name": "Aldeia Xavante", "level": "2-5", "x": 180, "y": 230},
+            {"name": "Aldeia Karajá", "level": "2-5", "x": 160, "y": 300},
+            {"name": "Aldeia Terena", "level": "3-5", "x": 180, "y": 370},
             
             # lado esquerdo inferior
             {"name": "Centro Geodésico", "level": "2-1", "x": 257, "y": 480},
@@ -645,7 +645,7 @@ class GameManager(QMainWindow):
         self.show_prologue()
 
         self.map_screen.location_selected_signal.connect(self.iniciar_quiz)
-    
+        
     def iniciar_quiz(self, location_name, dificuldade, classe):
         """Inicia o quiz com os parâmetros da fase selecionada"""
         print(f"🎮 Iniciando quiz: {location_name}, Dificuldade: {dificuldade}, Classe: {classe}")
@@ -654,41 +654,24 @@ class GameManager(QMainWindow):
         perguntas_respondidas = self.obter_perguntas_respondidas()
         
         try:
-            # Importar e criar o quiz
-            from backend.jogo import QuizGame
+            # Executar o quiz em um processo separado
+            import subprocess
+            import sys
             
-            # Criar uma nova janela tkinter
-            quiz_root = tk.Tk()
-            quiz_root.title("Quiz - Raízes Ocultas")
-            quiz_root.geometry("800x600")
+            args = [
+                sys.executable, "quiz_launcher.py",
+                str(dificuldade), str(classe), 
+                str(self.id_turma) if self.id_turma else "None",
+                str(perguntas_respondidas)
+            ]
             
-            # Centralizar a janela
-            quiz_root.update_idletasks()
-            width = quiz_root.winfo_width()
-            height = quiz_root.winfo_height()
-            x = (quiz_root.winfo_screenwidth() // 2) - (width // 2)
-            y = (quiz_root.winfo_screenheight() // 2) - (height // 2)
-            quiz_root.geometry(f"{width}x{height}+{x}+{y}")
-            
-            # Criar o jogo
-            quiz_game = QuizGame(
-                quiz_root, 
-                nivel=f"{dificuldade}-{classe}", 
-                id_turma=self.id_turma,
-                perguntas_anteriores=perguntas_respondidas
-            )
-            
-            # Configurar o que acontece quando o quiz fecha
-            quiz_root.protocol("WM_DELETE_WINDOW", lambda: self.ao_fechar_quiz(quiz_root))
-            
-            # Esconder a janela do mapa temporariamente
-            self.hide()
+            self.quiz_process = subprocess.Popen(args)
             
         except Exception as e:
             print(f"❌ Erro ao iniciar quiz: {e}")
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.critical(self, "Erro", f"Não foi possível iniciar o quiz: {str(e)}")
-    
+
     def ao_fechar_quiz(self, quiz_root):
         """Chamado quando o quiz é fechado"""
         try:

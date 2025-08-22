@@ -6,7 +6,6 @@ import os
 import random
 import time
 
-
 # Configurações do banco de dados
 pasta_db = "database"
 nome_banco = "raizes_ocultas.db"
@@ -30,48 +29,74 @@ class QuizGame:
         self.id_turma = id_turma
         self.perguntas_anteriores = perguntas_anteriores or []  # IDs das perguntas já respondidas
         self.root.protocol("WM_DELETE_WINDOW", self.fechar_quiz)
+        
         # Parse do nível para obter dificuldade e classe
-        self.dificuldade, self.classe = map(int, nivel.split('-'))
+        if nivel and '-' in nivel:
+            self.dificuldade, self.classe = map(int, nivel.split('-'))
+        else:
+            # Valores padrão se não for fornecido
+            self.dificuldade, self.classe = 1, 1
+        
+        # Elementos da interface (criar primeiro para evitar erros)
+        self.setup_ui()
         
         # Carrega as perguntas do banco de dados
         self.perguntas = self.carregar_perguntas_do_banco()
         
+        if not self.perguntas:
+            messagebox.showerror("Erro", "Nenhuma pergunta encontrada para este nível!")
+            self.root.after(1000, self.fechar_quiz)
+            return
+        
         # Configura os tempos baseados na dificuldade
         self.TEMPOS = self.definir_tempos()
         
-        
-        
-        # Elementos da interface
-        self.label_pergunta = tk.Label(root, text="", wraplength=500, font=("Arial", 14))
+        # Agora carrega a primeira pergunta
+        self.carregar_pergunta()
+
+    def setup_ui(self):
+        """Configura os elementos da interface"""
+        self.label_pergunta = tk.Label(self.root, text="Carregando perguntas...", wraplength=500, font=("Arial", 14))
         self.label_pergunta.pack(pady=20)
 
         self.botoes = []
         for i in range(4):
-            btn = tk.Button(root, text="", width=25, font=("Arial", 12), command=lambda i=i: self.verificar_resposta(i))
+            btn = tk.Button(self.root, text="", width=25, font=("Arial", 12), 
+                          command=lambda i=i: self.verificar_resposta(i), state=tk.DISABLED)
             btn.pack(pady=5)
             self.botoes.append(btn)
 
-        self.label_timer = tk.Label(root, text="", font=("Arial", 12))
+        self.label_timer = tk.Label(self.root, text="Tempo: --", font=("Arial", 12))
         self.label_timer.pack(pady=10)
 
-        self.label_vidas = tk.Label(root, text="Vidas: 3", font=("Arial", 12))
+        self.label_vidas = tk.Label(self.root, text="Vidas: 3", font=("Arial", 12))
         self.label_vidas.pack()
 
-        if self.perguntas:
-            self.carregar_pergunta()
-        else:
-            messagebox.showerror("Erro", "Nenhuma pergunta encontrada para este nível!")
-            self.root.quit()
     def fechar_quiz(self):
-            """Fecha o quiz corretamente"""
-            if hasattr(self, 'timer') and self.timer:
-                self.root.after_cancel(self.timer)
-            self.root.destroy()
+        """Fecha o quiz corretamente"""
+        if hasattr(self, 'timer') and self.timer:
+            self.root.after_cancel(self.timer)
+        self.root.destroy()
+
     def carregar_perguntas_do_banco(self):
         """Carrega perguntas do banco de dados baseado no nível selecionado"""
         try:
             conn = sqlite3.connect(caminho_completo)
             cursor = conn.cursor()
+            
+            # Primeiro, verifique se existem perguntas para este nível
+            cursor.execute("""
+                SELECT COUNT(*) FROM Perguntas 
+                WHERE dificuldade_pergunta = ? AND classe_pergunta = ?
+            """, (self.dificuldade, self.classe))
+            
+            total_perguntas = cursor.fetchone()[0]
+            print(f"Total de perguntas para nível {self.dificuldade}-{self.classe}: {total_perguntas}")
+            
+            if total_perguntas == 0:
+                messagebox.showerror("Erro", f"Nenhuma pergunta encontrada para o nível {self.dificuldade}-{self.classe}!")
+                conn.close()
+                return []
             
             # Query para buscar perguntas excluindo as já respondidas
             if self.perguntas_anteriores:
@@ -111,11 +136,15 @@ class QuizGame:
                     "resposta": row[6]
                 })
             
+            print(f"Perguntas carregadas: {len(perguntas)}")
             conn.close()
             return perguntas
+            
         except Exception as e:
             messagebox.showerror("Erro", f"Falha ao carregar perguntas: {str(e)}")
+            print(f"Erro detalhado: {e}")
             return []
+
     def definir_tempos(self):
         """Define os tempos baseados na dificuldade da pergunta"""
         # Quanto maior a dificuldade, menos tempo o jogador tem
@@ -130,7 +159,7 @@ class QuizGame:
     def carregar_pergunta(self):
         if self.pergunta_atual >= len(self.perguntas):
             messagebox.showinfo("Parabéns!", f"Você completou o quiz! Pontuação: {self.pontuacao}")
-            self.root.quit()
+            self.fechar_quiz()
             return
 
         p = self.perguntas[self.pergunta_atual]
@@ -145,7 +174,7 @@ class QuizGame:
         }
         
         for i, letra in enumerate(['A', 'B', 'C', 'D']):
-            self.botoes[i].config(text=opcoes_mapeadas[letra])
+            self.botoes[i].config(text=opcoes_mapeadas[letra], state=tk.NORMAL)
 
         self.tempo_restante = self.TEMPOS[self.pergunta_atual]
         self.atualizar_timer()
@@ -160,7 +189,8 @@ class QuizGame:
         self.timer = self.root.after(1000, self.atualizar_timer)
 
     def verificar_resposta(self, indice):
-        self.root.after_cancel(self.timer)
+        if hasattr(self, 'timer') and self.timer:
+            self.root.after_cancel(self.timer)
         
         tempo_gasto = self.TEMPOS[self.pergunta_atual] - self.tempo_restante
         letra_selecionada = ['A', 'B', 'C', 'D'][indice]
@@ -255,87 +285,9 @@ class QuizGame:
         
         if self.vidas <= 0:
             messagebox.showerror("Fim de Jogo", "Você perdeu todas as vidas!")
-            self.fechar_quiz()  # Usar fechar_quiz em vez de quit
+            self.fechar_quiz()
         else:
             self.pergunta_atual += 1
             self.carregar_pergunta()
-def carregar_perguntas_do_banco(self):
-    """Carrega perguntas do banco de dados baseado no nível selecionado"""
-    try:
-        conn = sqlite3.connect(caminho_completo)
-        cursor = conn.cursor()
-        
-        # Primeiro, verifique se existem perguntas para este nível
-        cursor.execute("""
-            SELECT COUNT(*) FROM Perguntas 
-            WHERE dificuldade_pergunta = ? AND classe_pergunta = ?
-        """, (self.dificuldade, self.classe))
-        
-        total_perguntas = cursor.fetchone()[0]
-        print(f"Total de perguntas para nível {self.dificuldade}-{self.classe}: {total_perguntas}")
-        
-        if total_perguntas == 0:
-            messagebox.showerror("Erro", f"Nenhuma pergunta encontrada para o nível {self.dificuldade}-{self.classe}!")
-            conn.close()
-            return []
-        
-        # Query para buscar perguntas excluindo as já respondidas
-        if self.perguntas_anteriores:
-            placeholders = ','.join('?' * len(self.perguntas_anteriores))
-            query = f"""
-                SELECT id_pergunta, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
-                FROM Perguntas 
-                WHERE dificuldade_pergunta = ? 
-                AND classe_pergunta = ?
-                AND id_pergunta NOT IN ({placeholders})
-                ORDER BY RANDOM()
-                LIMIT 10
-            """
-            params = [self.dificuldade, self.classe] + self.perguntas_anteriores
-        else:
-            query = """
-                SELECT id_pergunta, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, resposta 
-                FROM Perguntas 
-                WHERE dificuldade_pergunta = ? 
-                AND classe_pergunta = ?
-                ORDER BY RANDOM()
-                LIMIT 10
-            """
-            params = [self.dificuldade, self.classe]
-        
-        cursor.execute(query, params)
-        
-        perguntas = []
-        self.ids_perguntas_atual = []  # Armazena IDs das perguntas atuais
-        
-        for row in cursor.fetchall():
-            self.ids_perguntas_atual.append(row[0])  # Armazena o ID
-            perguntas.append({
-                "id_pergunta": row[0],
-                "pergunta": row[1],
-                "opcoes": [row[2], row[3], row[4], row[5]],
-                "resposta": row[6]
-            })
-        
-        print(f"Perguntas carregadas: {len(perguntas)}")
-        conn.close()
-        return perguntas
-        
-    except Exception as e:
-        messagebox.showerror("Erro", f"Falha ao carregar perguntas: {str(e)}")
-        return []
-# if __name__ == "__main__":
-#     root = tk.Tk()
-    
-#     # Exemplos corretos:
-#     # Ato I (Classe 5) - Fase Fácil (Dificuldade 1)
-#     # jogo = QuizGame(root, nivel="1-5")  # Dificuldade 1, Classe 5
-    
-#     # Ato II (Classe 4) - Fase Média (Dificuldade 2)
-#     #jogo = QuizGame(root, nivel="2-4")
-    
-#     # Ato III (Classe 3) - Fase Difícil (Dificuldade 3)
-#     # jogo = QuizGame(root, nivel="3-3")
-    
-    
-#     root.mainloop()
+
+# Remova o método duplicado carregar_perguntas_do_banco que está no final do arquivo    
