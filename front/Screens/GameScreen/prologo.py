@@ -657,14 +657,32 @@ class GameManager(QMainWindow):
             # Executar o quiz em um processo separado
             import subprocess
             import sys
+            import os
+            
+            # Obter o diretório atual do script
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            quiz_launcher_path = os.path.join(current_dir, "quiz_launcher.py")
+            
+            print(f"🔍 Procurando quiz_launcher.py em: {quiz_launcher_path}")
+            print(f"📁 Diretório atual: {current_dir}")
+            print(f"📋 Arquivos no diretório: {os.listdir(current_dir)}")
+            
+            # Verificar se o arquivo existe
+            if not os.path.exists(quiz_launcher_path):
+                print(f"❌ Arquivo quiz_launcher.py não encontrado!")
+                print(f"📁 Caminho verificado: {quiz_launcher_path}")
+                from PyQt6.QtWidgets import QMessageBox
+                QMessageBox.critical(self, "Erro", f"Arquivo do quiz não encontrado em:\n{quiz_launcher_path}")
+                return
             
             args = [
-                sys.executable, "quiz_launcher.py",
+                sys.executable, quiz_launcher_path,
                 str(dificuldade), str(classe), 
                 str(self.id_turma) if self.id_turma else "None",
                 str(perguntas_respondidas)
             ]
             
+            print(f"🚀 Executando: {' '.join(args)}")
             self.quiz_process = subprocess.Popen(args)
             
         except Exception as e:

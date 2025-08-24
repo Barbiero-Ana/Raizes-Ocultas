@@ -1,5 +1,5 @@
 import tkinter as tk
-from backend.jogo import QuizGame
+from jogo import QuizGame
 import sys
 import ast
 
