@@ -5,6 +5,13 @@ import sqlite3
 import os
 import random
 import time
+from tkinter import ttk
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    print("⚠️ PIL não encontrado. Usando fallback para emojis.")
 
 # Configurações do banco de dados
 pasta_db = "database"
@@ -15,8 +22,16 @@ class QuizGame:
     def __init__(self, root, nivel=None, id_turma=None, perguntas_anteriores=None):
         self.root = root
         self.root.title("Quiz Game - Raízes Ocultas")
-        self.root.geometry("800x600")
-        self.root.configure(bg="#f0f0f0")
+        self.root.geometry("1000x700")
+        self.root.configure(bg="#1a1a1a")
+        
+        # Centralizar a janela
+        self.root.update_idletasks()
+        width = 1000
+        height = 700
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f'{width}x{height}+{x}+{y}')
         self.pergunta_atual = 0
         self.pontuacao = 0
         self.vidas = 3
@@ -51,26 +66,117 @@ class QuizGame:
         # Configura os tempos baseados na dificuldade
         self.TEMPOS = self.definir_tempos()
         
+        # Definir avatar do boss baseado na dificuldade
+        self.definir_boss_avatar()
+        
         # Agora carrega a primeira pergunta
         self.carregar_pergunta()
 
     def setup_ui(self):
-        """Configura os elementos da interface"""
-        self.label_pergunta = tk.Label(self.root, text="Carregando perguntas...", wraplength=500, font=("Arial", 14))
-        self.label_pergunta.pack(pady=20)
-
+        """Configura os elementos da interface estilo RPG"""
+        # Container principal
+        main_frame = tk.Frame(self.root, bg="#1a1a1a")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Área superior - Arena de batalha (70% da tela)
+        arena_frame = tk.Frame(main_frame, bg="#2a2a2a", height=490)
+        arena_frame.pack(fill=tk.X, padx=0, pady=0)
+        arena_frame.pack_propagate(False)
+        
+        # Barra de status no topo
+        status_frame = tk.Frame(arena_frame, bg="#1a1a1a", height=60)
+        status_frame.pack(fill=tk.X, padx=20, pady=(20, 10))
+        status_frame.pack_propagate(False)
+        
+        # Timer (esquerda)
+        self.label_timer = tk.Label(status_frame, text="⏰ Tempo: --", 
+                                   font=("Arial", 14, "bold"), 
+                                   fg="#FFD700", bg="#654321", 
+                                   padx=15, pady=8, relief="raised", bd=2)
+        self.label_timer.pack(side=tk.LEFT)
+        
+        # Título central
+        title_label = tk.Label(status_frame, text="QUIZ BATTLE", 
+                              font=("Arial", 18, "bold"), fg="#FFD700", bg="#1a1a1a")
+        title_label.pack(side=tk.LEFT, expand=True)
+        
+        # Vidas (direita)
+        self.label_vidas = tk.Label(status_frame, text="❤️ Vidas: 3", 
+                                   font=("Arial", 14, "bold"), 
+                                   fg="#FFD700", bg="#654321", 
+                                   padx=15, pady=8, relief="raised", bd=2)
+        self.label_vidas.pack(side=tk.RIGHT)
+        
+        # Área dos personagens
+        battle_area = tk.Frame(arena_frame, bg="#2a2a2a")
+        battle_area.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
+        
+        # Personagem (esquerda)
+        player_frame = tk.Frame(battle_area, bg="#2a2a2a")
+        player_frame.pack(side=tk.LEFT, anchor="sw", padx=(0, 20))
+        
+        self.player_avatar = tk.Label(player_frame, bg="#2a2a2a")
+        self.carregar_sprite_player()
+        self.player_avatar.pack()
+        
+        player_name = tk.Label(player_frame, text="JOGADOR", 
+                              font=("Arial", 12, "bold"), 
+                              fg="#4CAF50", bg="#2a2a2a")
+        player_name.pack()
+        
+        # Boss/Inimigo (direita)
+        boss_frame = tk.Frame(battle_area, bg="#2a2a2a")
+        boss_frame.pack(side=tk.RIGHT, anchor="se", padx=(20, 0))
+        
+        self.boss_avatar = tk.Label(boss_frame, text="🐉", 
+                                   font=("Arial", 80), bg="#2a2a2a")
+        self.boss_avatar.pack()
+        
+        self.boss_name_label = tk.Label(boss_frame, text="DESAFIO", 
+                            font=("Arial", 12, "bold"), 
+                            fg="#F44336", bg="#2a2a2a")
+        self.boss_name_label.pack()
+        
+        # Área inferior - Bubble de diálogo (30% da tela)
+        dialog_frame = tk.Frame(main_frame, bg="#1a1a1a", height=210)
+        dialog_frame.pack(fill=tk.X, padx=0, pady=0)
+        dialog_frame.pack_propagate(False)
+        
+        # Bubble da pergunta
+        bubble_frame = tk.Frame(dialog_frame, bg="#3d2914", relief="raised", bd=3)
+        bubble_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        
+        # Pergunta
+        self.label_pergunta = tk.Label(bubble_frame, text="Carregando perguntas...", 
+                                      wraplength=900, font=("Arial", 14, "bold"), 
+                                      fg="#f5e9c3", bg="#3d2914", pady=15)
+        self.label_pergunta.pack(fill=tk.X)
+        
+        # Container dos botões em grid 2x2
+        botoes_container = tk.Frame(bubble_frame, bg="#3d2914")
+        botoes_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 15))
+        
         self.botoes = []
+        letras = ['A', 'B', 'C', 'D']
+        positions = [(0, 0), (0, 1), (1, 0), (1, 1)]  # Grid 2x2
+        
         for i in range(4):
-            btn = tk.Button(self.root, text="", width=25, font=("Arial", 12), 
-                          command=lambda i=i: self.verificar_resposta(i), state=tk.DISABLED)
-            btn.pack(pady=5)
+            row, col = positions[i]
+            btn = tk.Button(botoes_container, text="", 
+                          font=("Arial", 11, "bold"), 
+                          bg="#8B4513", fg="#f5e9c3",
+                          activebackground="#A0522D", activeforeground="#fff8dc",
+                          relief="raised", bd=2, wraplength=350,
+                          command=lambda i=i: self.verificar_resposta(i), 
+                          state=tk.DISABLED)
+            btn.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
             self.botoes.append(btn)
-
-        self.label_timer = tk.Label(self.root, text="Tempo: --", font=("Arial", 12))
-        self.label_timer.pack(pady=10)
-
-        self.label_vidas = tk.Label(self.root, text="Vidas: 3", font=("Arial", 12))
-        self.label_vidas.pack()
+        
+        # Configurar grid para expandir igualmente
+        botoes_container.grid_rowconfigure(0, weight=1)
+        botoes_container.grid_rowconfigure(1, weight=1)
+        botoes_container.grid_columnconfigure(0, weight=1)
+        botoes_container.grid_columnconfigure(1, weight=1)
 
     def fechar_quiz(self):
         """Fecha o quiz corretamente"""
@@ -155,10 +261,121 @@ class QuizGame:
             4: 30    # Difícil - menos tempo
         }
         return [tempos_base[self.dificuldade]] * len(self.perguntas)
+    
+    def definir_boss_avatar(self):
+        """Define o avatar do boss baseado na dificuldade e classe"""
+        boss_avatars = {
+            1: "🐸",      # Fácil - Sapo
+            2: "🐺",      # Médio - Lobo  
+            3: "🐉",      # Difícil - Dragão
+            4: "👹"       # Muito Difícil - Oni
+        }
+        
+        boss_names = {
+            1: "INICIANTE",
+            2: "GUARDIÃO", 
+            3: "DRAGÃO ANCESTRAL",
+            4: "MESTRE SUPREMO"
+        }
+        
+        if hasattr(self, 'boss_avatar'):
+            avatar = boss_avatars.get(self.dificuldade, "🐉")
+            self.boss_avatar.config(text=avatar)
+            
+        if hasattr(self, 'boss_name_label'):
+            nome = boss_names.get(self.dificuldade, "DESAFIO")
+            self.boss_name_label.config(text=nome)
+    
+    def carregar_sprite_player(self):
+        """Carrega o sprite do player"""
+        if not PIL_AVAILABLE:
+            # Fallback para emoji se PIL não estiver disponível
+            self.player_avatar.config(text="🧙‍♂️", font=("Arial", 80))
+            return
+            
+        sprite_path = "assets/ScreenElements/personagens/player-static.png"
+        
+        try:
+            if os.path.exists(sprite_path):
+                # Carregar e redimensionar a imagem
+                image = Image.open(sprite_path)
+                # Redimensionar para um tamanho apropriado para o quiz (maior que no jogo principal)
+                image = image.resize((120, 160), Image.Resampling.LANCZOS)
+                self.player_image = ImageTk.PhotoImage(image)
+                self.player_avatar.config(image=self.player_image)
+                
+                # Guardar referências para as animações
+                self.player_image_normal = self.player_image
+                self.criar_sprites_animacao()
+            else:
+                # Fallback para emoji se a imagem não existir
+                self.player_avatar.config(text="🧙‍♂️", font=("Arial", 80))
+                print(f"⚠️ Sprite não encontrado: {sprite_path}")
+                
+        except Exception as e:
+            # Fallback para emoji em caso de erro
+            self.player_avatar.config(text="🧙‍♂️", font=("Arial", 80))
+            print(f"⚠️ Erro ao carregar sprite: {e}")
+    
+    def criar_sprites_animacao(self):
+        """Cria sprites coloridos para animações de vitória e erro"""
+        if not PIL_AVAILABLE:
+            return
+            
+        try:
+            sprite_path = "assets/ScreenElements/personagens/player-static.png"
+            if os.path.exists(sprite_path):
+                # Imagem original
+                base_image = Image.open(sprite_path)
+                base_image = base_image.resize((120, 160), Image.Resampling.LANCZOS)
+                
+                # Sprite de vitória (mais brilhante/dourado)
+                victory_image = base_image.copy()
+                # Aplicar um filtro dourado (aumentar amarelo/vermelho)
+                pixels = victory_image.load()
+                width, height = victory_image.size
+                for x in range(width):
+                    for y in range(height):
+                        r, g, b, a = pixels[x, y] if len(pixels[x, y]) == 4 else (*pixels[x, y], 255)
+                        # Aumentar componentes dourados
+                        r = min(255, int(r * 1.3))
+                        g = min(255, int(g * 1.2))
+                        pixels[x, y] = (r, g, b, a) if len(pixels[x, y]) == 4 else (r, g, b)
+                
+                self.player_image_victory = ImageTk.PhotoImage(victory_image)
+                
+                # Sprite de erro (mais escuro/acinzentado)
+                error_image = base_image.copy()
+                pixels = error_image.load()
+                for x in range(width):
+                    for y in range(height):
+                        r, g, b, a = pixels[x, y] if len(pixels[x, y]) == 4 else (*pixels[x, y], 255)
+                        # Escurecer a imagem
+                        r = int(r * 0.6)
+                        g = int(g * 0.6)
+                        b = int(b * 0.6)
+                        pixels[x, y] = (r, g, b, a) if len(pixels[x, y]) == 4 else (r, g, b)
+                
+                self.player_image_error = ImageTk.PhotoImage(error_image)
+                
+        except Exception as e:
+            print(f"⚠️ Erro ao criar sprites de animação: {e}")
+            # Usar a imagem normal como fallback
+            self.player_image_victory = self.player_image_normal
+            self.player_image_error = self.player_image_normal
 
     def carregar_pergunta(self):
         if self.pergunta_atual >= len(self.perguntas):
-            messagebox.showinfo("Parabéns!", f"Você completou o quiz! Pontuação: {self.pontuacao}")
+            # Animação de vitória
+            if hasattr(self, 'player_avatar'):
+                if hasattr(self, 'player_image_victory'):
+                    self.player_avatar.config(image=self.player_image_victory)
+                else:
+                    self.player_avatar.config(text="👑")  # Fallback emoji
+            if hasattr(self, 'boss_avatar'):
+                self.boss_avatar.config(text="💀")  # Boss derrotado
+            
+            messagebox.showinfo("🏆 VITÓRIA!", f"Você derrotou o {self.boss_name_label.cget('text')}!\\nPontuação Final: {self.pontuacao}/{len(self.perguntas)}")
             self.fechar_quiz()
             return
 
@@ -174,13 +391,39 @@ class QuizGame:
         }
         
         for i, letra in enumerate(['A', 'B', 'C', 'D']):
-            self.botoes[i].config(text=opcoes_mapeadas[letra], state=tk.NORMAL)
+            texto_botao = f"{letra}) {opcoes_mapeadas[letra]}"
+            self.botoes[i].config(text=texto_botao, state=tk.NORMAL, height=2)
+            # Adicionar efeito hover
+            self.botoes[i].bind("<Enter>", lambda e, btn=self.botoes[i]: btn.config(bg="#A0522D", fg="#fff8dc"))
+            self.botoes[i].bind("<Leave>", lambda e, btn=self.botoes[i]: btn.config(bg="#8B4513", fg="#f5e9c3"))
 
         self.tempo_restante = self.TEMPOS[self.pergunta_atual]
         self.atualizar_timer()
 
     def atualizar_timer(self):
-        self.label_timer.config(text=f"Tempo restante: {self.tempo_restante} segundos")
+        # Cores dinâmicas baseadas no tempo restante
+        if self.tempo_restante > 30:
+            cor_timer = "#FFD700"
+            bg_timer = "#654321"
+        elif self.tempo_restante > 10:
+            cor_timer = "#FFA500"
+            bg_timer = "#8B4513"
+            # Boss começa a se agitar
+            if hasattr(self, 'boss_avatar'):
+                original_avatar = self.boss_avatar.cget("text")
+                self.boss_avatar.config(text="😤")  # Boss irritado
+                self.root.after(300, lambda: self.boss_avatar.config(text=original_avatar))
+        else:
+            cor_timer = "#FF4500"
+            bg_timer = "#B22222"
+            # Boss ataca!
+            if hasattr(self, 'boss_avatar'):
+                self.boss_avatar.config(text="⚡")  # Ataque
+                self.root.after(200, lambda: self.boss_avatar.config(text="😈"))
+        
+        self.label_timer.config(text=f"⏰ Tempo: {self.tempo_restante}s", 
+                               fg=cor_timer, bg=bg_timer)
+        
         if self.tempo_restante <= 0:
             self.perde_vida("Tempo esgotado!")
             return
@@ -209,7 +452,14 @@ class QuizGame:
                 self.conceder_bonus()
                 mensagem += "\n\nVocê ganhou um bônus especial!"
             
-            messagebox.showinfo("Correto!", mensagem)
+            messagebox.showinfo("✅ Correto!", mensagem)
+            # Animação de acerto no personagem
+            if hasattr(self, 'player_image_victory'):
+                self.player_avatar.config(image=self.player_image_victory)
+                self.root.after(1000, lambda: self.player_avatar.config(image=self.player_image_normal))
+            else:
+                self.player_avatar.config(text="🎆")
+                self.root.after(1000, lambda: self.player_avatar.config(text="🧙‍♂️"))
         else:
             self.respostas_corretas_consecutivas = 0
             self.perde_vida("Resposta incorreta!")
@@ -258,7 +508,7 @@ class QuizGame:
         
         if bonus == "vida_extra":
             self.vidas += 1
-            self.label_vidas.config(text=f"Vidas: {self.vidas}")
+            self.label_vidas.config(text=f"❤️ Vidas: {self.vidas}")
             messagebox.showinfo("Bônus!", "Você ganhou uma vida extra!")
         
         elif bonus == "segunda_chance":
@@ -280,11 +530,27 @@ class QuizGame:
             return
             
         self.vidas -= 1
-        self.label_vidas.config(text=f"Vidas: {self.vidas}")
-        messagebox.showwarning("Erro!", f"{motivo} Você perdeu uma vida.")
+        self.label_vidas.config(text=f"❤️ Vidas: {self.vidas}")
+        messagebox.showwarning("❌ Erro!", f"{motivo} Você perdeu uma vida.")
+        # Animação de erro no personagem
+        if hasattr(self, 'player_image_error'):
+            self.player_avatar.config(image=self.player_image_error)
+            self.root.after(1500, lambda: self.player_avatar.config(image=self.player_image_normal))
+        else:
+            self.player_avatar.config(text="😵")
+            self.root.after(1500, lambda: self.player_avatar.config(text="🧙‍♂️"))
         
         if self.vidas <= 0:
-            messagebox.showerror("Fim de Jogo", "Você perdeu todas as vidas!")
+            # Animação de derrota
+            if hasattr(self, 'player_avatar'):
+                if hasattr(self, 'player_image_error'):
+                    self.player_avatar.config(image=self.player_image_error)
+                else:
+                    self.player_avatar.config(text="💀")  # Fallback emoji
+            if hasattr(self, 'boss_avatar'):
+                self.boss_avatar.config(text="😈")  # Boss vitorioso
+            
+            messagebox.showerror("💀 DERROTA!", f"O {self.boss_name_label.cget('text')} te derrotou!\\nVocê perdeu todas as vidas!")
             self.fechar_quiz()
         else:
             self.pergunta_atual += 1
