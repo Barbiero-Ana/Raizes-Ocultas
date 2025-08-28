@@ -140,8 +140,8 @@ class QuizGame:
             row, col = positions[i]
             btn = tk.Button(botoes_container, text="", 
                           font=("Arial", 11, "bold"), 
-                          bg="#8B4513", fg="#f5e9c3",
-                          activebackground="#A0522D", activeforeground="#fff8dc",
+                          bg="#8B4513", fg="#FFD700",
+                          activebackground="#A0522D", activeforeground="#FFD700",
                           relief="raised", bd=2, wraplength=350,
                           command=lambda i=i: self.verificar_resposta(i), 
                           state=tk.DISABLED)
@@ -231,24 +231,25 @@ class QuizGame:
         return [tempos_base[self.dificuldade]] * len(self.perguntas)
     
     def definir_boss_avatar(self):
-        """Define o avatar do boss baseado na dificuldade e classe"""
-        boss_avatars = {
-            1: "🐸",      
-            2: "🐺",      
-            3: "🐉",      
-            4: "👹"      
-        }
-        
         boss_names = {
-            1: "INICIANTE",
+            1: "ESPÍRITO DA NEBLINA",
             2: "GUARDIÃO", 
             3: "DRAGÃO ANCESTRAL",
             4: "MESTRE SUPREMO"
         }
         
-        if hasattr(self, 'boss_avatar'):
-            avatar = boss_avatars.get(self.dificuldade, "🐉")
-            self.boss_avatar.config(text=avatar)
+        if PIL_AVAILABLE and hasattr(self, 'boss_avatar'):
+            self.carregar_sprite_boss()
+        else:
+            boss_avatars = {
+                1: "🐸",      
+                2: "🐺",      
+                3: "🐉",      
+                4: "👹"      
+            }
+            if hasattr(self, 'boss_avatar'):
+                avatar = boss_avatars.get(self.dificuldade, "🐉")
+                self.boss_avatar.config(text=avatar)
             
         if hasattr(self, 'boss_name_label'):
             nome = boss_names.get(self.dificuldade, "DESAFIO")
@@ -279,30 +280,46 @@ class QuizGame:
             print(f"⚠️ Erro ao carregar sprite: {e}")
     
     def criar_sprites_animacao(self):
-        """Cria sprites coloridos para animações de vitória e erro"""
         if not PIL_AVAILABLE:
             return
             
         try:
+            # Carregar sprite de vitória específico
+            victory_path = "assets/ScreenElements/personagens/player-victory.png"
+            if os.path.exists(victory_path):
+                victory_image = Image.open(victory_path)
+                victory_image = victory_image.resize((120, 160), Image.Resampling.LANCZOS)
+                self.player_image_victory = ImageTk.PhotoImage(victory_image)
+            else:
+                # Fallback: criar versão modificada da imagem estática
+                sprite_path = "assets/ScreenElements/personagens/player-static.png"
+                if os.path.exists(sprite_path):
+                    base_image = Image.open(sprite_path)
+                    base_image = base_image.resize((120, 160), Image.Resampling.LANCZOS)
+                    
+                    victory_image = base_image.copy()
+                    pixels = victory_image.load()
+                    width, height = victory_image.size
+                    for x in range(width):
+                        for y in range(height):
+                            r, g, b, a = pixels[x, y] if len(pixels[x, y]) == 4 else (*pixels[x, y], 255)
+                            r = min(255, int(r * 1.3))
+                            g = min(255, int(g * 1.2))
+                            pixels[x, y] = (r, g, b, a) if len(pixels[x, y]) == 4 else (r, g, b)
+                    
+                    self.player_image_victory = ImageTk.PhotoImage(victory_image)
+                else:
+                    self.player_image_victory = self.player_image_normal
+            
+            # Criar sprite de erro
             sprite_path = "assets/ScreenElements/personagens/player-static.png"
             if os.path.exists(sprite_path):
                 base_image = Image.open(sprite_path)
                 base_image = base_image.resize((120, 160), Image.Resampling.LANCZOS)
                 
-                victory_image = base_image.copy()
-                pixels = victory_image.load()
-                width, height = victory_image.size
-                for x in range(width):
-                    for y in range(height):
-                        r, g, b, a = pixels[x, y] if len(pixels[x, y]) == 4 else (*pixels[x, y], 255)
-                        r = min(255, int(r * 1.3))
-                        g = min(255, int(g * 1.2))
-                        pixels[x, y] = (r, g, b, a) if len(pixels[x, y]) == 4 else (r, g, b)
-                
-                self.player_image_victory = ImageTk.PhotoImage(victory_image)
-                
                 error_image = base_image.copy()
                 pixels = error_image.load()
+                width, height = error_image.size
                 for x in range(width):
                     for y in range(height):
                         r, g, b, a = pixels[x, y] if len(pixels[x, y]) == 4 else (*pixels[x, y], 255)
@@ -312,11 +329,73 @@ class QuizGame:
                         pixels[x, y] = (r, g, b, a) if len(pixels[x, y]) == 4 else (r, g, b)
                 
                 self.player_image_error = ImageTk.PhotoImage(error_image)
+            else:
+                self.player_image_error = self.player_image_normal
                 
         except Exception as e:
             print(f"⚠️ Erro ao criar sprites de animação: {e}")
             self.player_image_victory = self.player_image_normal
             self.player_image_error = self.player_image_normal
+    
+    def carregar_sprite_boss(self):
+        if not PIL_AVAILABLE:
+            return
+            
+        boss_sprites = {
+            1: "assets/ScreenElements/gamescreen/boss/espirito-neblina/neblina-idle.png",
+            2: "assets/ScreenElements/gamescreen/boss/espirito-neblina/neblina-idle.png", 
+            3: "assets/ScreenElements/gamescreen/boss/espirito-neblina/neblina-bonuss.png", # Reutilizar para nível 3
+            4: "assets/ScreenElements/gamescreen/boss/espirito-neblina/neblina-bonuss.png"  # Reutilizar para nível 4
+        }
+        
+        sprite_path = boss_sprites.get(self.dificuldade, boss_sprites[1])
+        
+        try:
+            if os.path.exists(sprite_path):
+                image = Image.open(sprite_path)
+                
+                image = image.resize((140, 180), Image.Resampling.LANCZOS)
+                self.boss_image = ImageTk.PhotoImage(image)
+                self.boss_avatar.config(image=self.boss_image, text="")
+                
+                self.carregar_sprites_boss_animacao()
+            else:
+                print(f"⚠️ Sprite do boss não encontrado: {sprite_path}")
+                boss_avatars = {1: "🐸", 2: "🐺", 3: "🐉", 4: "👹"}
+                avatar = boss_avatars.get(self.dificuldade, "🐉")
+                self.boss_avatar.config(text=avatar)
+                
+        except Exception as e:
+            print(f"⚠️ Erro ao carregar sprite do boss: {e}")
+            boss_avatars = {1: "🐸", 2: "🐺", 3: "🐉", 4: "👹"}
+            avatar = boss_avatars.get(self.dificuldade, "🐉")
+            self.boss_avatar.config(text=avatar)
+    
+    def carregar_sprites_boss_animacao(self):
+        if not PIL_AVAILABLE:
+            return
+            
+        try:
+            defeated_path = "assets/ScreenElements/gamescreen/boss/espirito-neblina/neblina-defeated.png"
+            if os.path.exists(defeated_path):
+                defeated_image = Image.open(defeated_path)
+                defeated_image = defeated_image.resize((140, 180), Image.Resampling.LANCZOS)
+                self.boss_image_defeated = ImageTk.PhotoImage(defeated_image)
+            else:
+                self.boss_image_defeated = None
+            
+            bonus_path = "assets/ScreenElements/gamescreen/boss/espirito-neblina/neblina-bonuss.png"
+            if os.path.exists(bonus_path):
+                bonus_image = Image.open(bonus_path)
+                bonus_image = bonus_image.resize((140, 180), Image.Resampling.LANCZOS)
+                self.boss_image_bonus = ImageTk.PhotoImage(bonus_image)
+            else:
+                self.boss_image_bonus = None
+                
+        except Exception as e:
+            print(f"⚠️ Erro ao carregar sprites de animação do boss: {e}")
+            self.boss_image_defeated = None
+            self.boss_image_bonus = None
 
     def carregar_pergunta(self):
         if self.pergunta_atual >= len(self.perguntas):
@@ -324,9 +403,12 @@ class QuizGame:
                 if hasattr(self, 'player_image_victory'):
                     self.player_avatar.config(image=self.player_image_victory)
                 else:
-                    self.player_avatar.config(text="👑")  # Fallback emoji
+                    self.player_avatar.config(text="👑")  
             if hasattr(self, 'boss_avatar'):
-                self.boss_avatar.config(text="💀")  # Boss derrotado
+                if hasattr(self, 'boss_image_defeated') and self.boss_image_defeated:
+                    self.boss_avatar.config(image=self.boss_image_defeated)
+                else:
+                    self.boss_avatar.config(text="💀")  
             
             messagebox.showinfo("🏆 VITÓRIA!", f"Você derrotou o {self.boss_name_label.cget('text')}!\\nPontuação Final: {self.pontuacao}/{len(self.perguntas)}")
             self.fechar_quiz()
@@ -335,7 +417,6 @@ class QuizGame:
         p = self.perguntas[self.pergunta_atual]
         self.label_pergunta.config(text=f"{self.pergunta_atual+1}. {p['pergunta']}")
         
-        # Mapeia as opções para os botões
         opcoes_mapeadas = {
             'A': p['opcoes'][0],
             'B': p['opcoes'][1],
@@ -345,10 +426,10 @@ class QuizGame:
         
         for i, letra in enumerate(['A', 'B', 'C', 'D']):
             texto_botao = f"{letra}) {opcoes_mapeadas[letra]}"
-            self.botoes[i].config(text=texto_botao, state=tk.NORMAL, height=2)
-            # Adicionar efeito hover
-            self.botoes[i].bind("<Enter>", lambda e, btn=self.botoes[i]: btn.config(bg="#A0522D", fg="#fff8dc"))
-            self.botoes[i].bind("<Leave>", lambda e, btn=self.botoes[i]: btn.config(bg="#8B4513", fg="#f5e9c3"))
+            self.botoes[i].config(text=texto_botao, state=tk.NORMAL, height=2, 
+                                bg="#8B4513", fg="#DC9D08")
+            self.botoes[i].bind("<Enter>", lambda e, btn=self.botoes[i]: btn.config(bg="#A0522D", fg="#DC9D08"))
+            self.botoes[i].bind("<Leave>", lambda e, btn=self.botoes[i]: btn.config(bg="#8B4513", fg="#DC9D08"))
 
         self.tempo_restante = self.TEMPOS[self.pergunta_atual]
         self.atualizar_timer()
@@ -361,15 +442,27 @@ class QuizGame:
             cor_timer = "#FFA500"
             bg_timer = "#8B4513"
             if hasattr(self, 'boss_avatar'):
-                original_avatar = self.boss_avatar.cget("text")
-                self.boss_avatar.config(text="😤")  # Boss irritado
-                self.root.after(300, lambda: self.boss_avatar.config(text=original_avatar))
+                if hasattr(self, 'boss_image_bonus') and self.boss_image_bonus:
+                    original_image = self.boss_avatar.cget("image") if self.boss_avatar.cget("image") else None
+                    self.boss_avatar.config(image=self.boss_image_bonus)
+                    if original_image:
+                        self.root.after(300, lambda: self.boss_avatar.config(image=original_image))
+                    else:
+                        self.root.after(300, lambda: self.boss_avatar.config(image=self.boss_image))
+                else:
+                    original_avatar = self.boss_avatar.cget("text")
+                    self.boss_avatar.config(text="😤")  
+                    self.root.after(300, lambda: self.boss_avatar.config(text=original_avatar))
         else:
             cor_timer = "#FF4500"
             bg_timer = "#B22222"
             if hasattr(self, 'boss_avatar'):
-                self.boss_avatar.config(text="⚡")  # Ataque
-                self.root.after(200, lambda: self.boss_avatar.config(text="😈"))
+                if hasattr(self, 'boss_image_bonus') and self.boss_image_bonus:
+                    self.boss_avatar.config(image=self.boss_image_bonus)
+                    self.root.after(200, lambda: self.boss_avatar.config(image=self.boss_image))
+                else:
+                    self.boss_avatar.config(text="⚡")  
+                    self.root.after(200, lambda: self.boss_avatar.config(text="😈"))
         
         self.label_timer.config(text=f"⏰ Tempo: {self.tempo_restante}s", 
                                fg=cor_timer, bg=bg_timer)
@@ -489,7 +582,11 @@ class QuizGame:
                 else:
                     self.player_avatar.config(text="💀")  
             if hasattr(self, 'boss_avatar'):
-                self.boss_avatar.config(text="😈")  
+                # Usar sprite de boss bônus se disponível (representando vitória), senão emoji
+                if hasattr(self, 'boss_image_bonus') and self.boss_image_bonus:
+                    self.boss_avatar.config(image=self.boss_image_bonus)
+                else:
+                    self.boss_avatar.config(text="😈")  
             
             messagebox.showerror("💀 DERROTA!", f"O {self.boss_name_label.cget('text')} te derrotou!\\nVocê perdeu todas as vidas!")
             self.fechar_quiz()
