@@ -233,9 +233,9 @@ class QuizGame:
     def definir_boss_avatar(self):
         boss_names = {
             1: "ESPÍRITO DA NEBLINA",
-            2: "GUARDIÃO", 
-            3: "DRAGÃO ANCESTRAL",
-            4: "MESTRE SUPREMO"
+            2: "ESPÍRITO DA NEBLINA", 
+            3: "ESPÍRITO DA NEBLINA ENFURECIDO",
+            4: "ESPÍRITO DA NEBLINA FURIOSO"
         }
         
         if PIL_AVAILABLE and hasattr(self, 'boss_avatar'):
