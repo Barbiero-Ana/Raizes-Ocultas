@@ -95,22 +95,15 @@ class FontManager:
         
         return font
     
-    def list_system_fonts(self):
-        if self.debug_mode:
-            families = QFontDatabase.families()
-            print(f"📚 Fontes do sistema ({len(families)} disponíveis):")
-            for i, family in enumerate(families[:10]):  # Mostrar apenas as 10 primeiras
-                print(f"   {i+1}. {family}")
-            if len(families) > 10:
-                print(f"   ... e mais {len(families) - 10} fontes")
+    
 
 class MapButton(QPushButton):
-    location_clicked = pyqtSignal(str, str)  # Agora ambos são strings: nome e nível
+    location_clicked = pyqtSignal(str, str)  #
     
     def __init__(self, location_name: str, level: str, x: int, y: int, parent=None):
         super().__init__(parent)
         self.location_name = location_name
-        self.level = level  # Isso deve ser uma string como "1-1"
+        self.level = level 
         self.setFixedSize(40, 40)
         self.move(x, y)
         
@@ -135,7 +128,6 @@ class MapButton(QPushButton):
             }}
         """)
         
-        # Mostrar apenas o número do nível (ex: "1" em vez de "1-1")
         level_number = level.split('-')[0] if '-' in level else level
         self.setText(level_number)
         
@@ -143,7 +135,7 @@ class MapButton(QPushButton):
         self.clicked.connect(self.on_clicked)
     
     def on_clicked(self):
-        self.location_clicked.emit(self.location_name, self.level)  # Emitir o nível completo
+        self.location_clicked.emit(self.location_name, self.level) 
 
 class MenuScreen(QMainWindow):
     
@@ -158,7 +150,6 @@ class MenuScreen(QMainWindow):
         self.setWindowTitle("Menu - Raízes Ocultas")
         self.setFixedSize(400, 300)
         
-        # Centralizar na tela - buscar a janela principal (GameManager)
         game_manager = self.parent()
         if hasattr(self.parent(), 'parent') and self.parent().parent():
             game_manager = self.parent().parent()
@@ -169,23 +160,19 @@ class MenuScreen(QMainWindow):
             y = parent_geometry.y() + (parent_geometry.height() - 300) // 2
             self.setGeometry(x, y, 400, 300)
         else:
-            # Fallback: centralizar na tela do sistema
             from PyQt6.QtWidgets import QApplication
             screen = QApplication.primaryScreen().geometry()
             x = (screen.width() - 400) // 2
             y = (screen.height() - 300) // 2
             self.setGeometry(x, y, 400, 300)
         
-        # Widget principal
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         
-        # Layout principal
         main_layout = QVBoxLayout(main_widget)
         main_layout.setSpacing(30)
         main_layout.setContentsMargins(40, 40, 40, 40)
         
-        # Fundo do menu
         main_widget.setStyleSheet("""
             QWidget {
                 background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1,
@@ -195,7 +182,6 @@ class MenuScreen(QMainWindow):
             }
         """)
         
-        # Título do menu
         title_label = QLabel("☰ MENU")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
@@ -215,10 +201,8 @@ class MenuScreen(QMainWindow):
         
         main_layout.addWidget(title_label)
         
-        # Espaçamento
         main_layout.addSpacing(20)
         
-        # Botão Continuar
         self.continue_button = QPushButton("▶ Continuar")
         self.continue_button.setFixedSize(250, 50)
         self.continue_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -253,10 +237,8 @@ class MenuScreen(QMainWindow):
         self.continue_button.clicked.connect(self.close_menu)
         main_layout.addWidget(self.continue_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
-        # Espaçamento
         main_layout.addSpacing(10)
         
-        # Botão Sair
         self.exit_button = QPushButton("🚪 Sair")
         self.exit_button.setFixedSize(250, 50)
         self.exit_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -291,55 +273,45 @@ class MenuScreen(QMainWindow):
         self.exit_button.clicked.connect(self.exit_to_game_screen)
         main_layout.addWidget(self.exit_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
-        # Espaçamento final
         main_layout.addStretch()
     
     def close_menu(self):
-        """Fecha o menu e continua no mapa"""
         self.close()
     
     def exit_to_game_screen(self):
-        """Sai para a tela inicial (game_screen)"""
         self.close()
         
-        # Buscar o GameManager (parent do MapScreen)
         game_manager = None
         if hasattr(self.map_screen, 'parent') and self.map_screen.parent():
             game_manager = self.map_screen.parent()
         
         if game_manager and hasattr(game_manager, 'show_game_screen'):
-            # Usar o método do GameManager para mostrar game_screen
             game_manager.show_game_screen()
         else:
-            # Fallback: tentar encontrar uma instância existente na aplicação
             from PyQt6.QtWidgets import QApplication
             app = QApplication.instance()
             if app:
                 for widget in app.allWidgets():
                     if widget.__class__.__name__ == 'GameScreen' and hasattr(widget, 'show'):
-                        # Fechar o GameManager
                         if game_manager:
                             game_manager.close()
                         widget.show()
                         return
             
-            # Último recurso: criar nova instância com parâmetros padrão
             print("⚠️ Criando nova instância do GameScreen")
             import sys
             import os
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
             from game_screen import GameScreen
             
-            # Fechar a janela atual do mapa/jogo
             if game_manager:
                 game_manager.close()
             
-            # Mostrar a tela inicial com parâmetros padrão
             game_screen = GameScreen(tela_login=None, id_usuario=None)
             game_screen.show()
 
 class MapScreen(QMainWindow):
-    location_selected_signal = pyqtSignal(str, int, int)  # Nome, Dificuldade, Classe
+    location_selected_signal = pyqtSignal(str, int, int)  
     
     def __init__(self, font_manager=None, parent=None):
         super().__init__(parent)
@@ -365,7 +337,6 @@ class MapScreen(QMainWindow):
             
             self.background_label.setPixmap(scaled_pixmap)
             
-            # Estilo apenas para a borda do widget principal
             main_widget.setStyleSheet("""
                 QWidget {
                     border: 10px solid #8B4513;
@@ -391,37 +362,28 @@ class MapScreen(QMainWindow):
         self.setWindowTitle("Raízes Ocultas - Mapa")
         self.setFixedSize(1000, 700)
         
-        # Widget principal
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         
-        # === CRIAR ÁREA DO MAPA (importante para os botões dos locais) ===
-        self.map_area = main_widget  # O widget principal serve como área do mapa
+
+        self.map_area = main_widget  
         
-        # Layout principal
         main_layout = QVBoxLayout(main_widget)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # === FUNDO DO MAPA ===
         self.setup_background(main_widget)
         
-        # === CRIAR LOCAIS NO MAPA (círculos amarelos) ===
         self.create_map_locations()
-        
-        # === BOTÕES DO MAPA ===
-        # Adicionar mais espaço antes dos botões para empurrá-los para baixo
-        main_layout.addStretch(3)  # Adiciona espaço flexível maior
         
         map_buttons_layout = QHBoxLayout()
         map_buttons_layout.addStretch()
         
-        # Botão Menu
+        # btn menu
         self.back_button = QPushButton("☰ Menu")
         self.back_button.setFixedSize(120, 40)
         self.back_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        # Aplicar fonte personalizada ao botão
         if self.font_manager:
             button_font = self.font_manager.get_font("botoes", size=12, bold=True)
             self.back_button.setFont(button_font)
@@ -444,12 +406,10 @@ class MapScreen(QMainWindow):
         map_buttons_layout.addWidget(self.back_button)
         map_buttons_layout.addSpacing(20)
         
-        # Botão Começar Jogo
-        self.skip_button = QPushButton("⏭️ Começar Jogo")
+        self.skip_button = QPushButton("Começar Jogo")
         self.skip_button.setFixedSize(150, 40)
         self.skip_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        # Aplicar fonte personalizada ao botão pular
         if self.font_manager:
             skip_font = self.font_manager.get_font("botoes", size=12, bold=True)
             self.skip_button.setFont(skip_font)
@@ -480,7 +440,6 @@ class MapScreen(QMainWindow):
         
         main_layout.addLayout(map_buttons_layout)
         
-        # Adicionar um pequeno espaço no final (margem inferior)
         main_layout.addSpacing(20)
         
     def create_map_locations(self):
@@ -525,20 +484,16 @@ class MapScreen(QMainWindow):
         print(f"🗺️ Local selecionado: {location_name} (Nível {level})")        
         self.show_location_info(location_name, level)
         
-        # Emitir sinal com informações da fase selecionada
         if hasattr(self, 'location_selected_signal'):
-            # Parse do nível para obter dificuldade e classe
             try:
                 if '-' in level:
                     dificuldade, classe = map(int, level.split('-'))
                     self.location_selected_signal.emit(location_name, dificuldade, classe)
                 else:
-                    # Se não tiver formato correto, usar valores padrão
                     print(f"⚠️ Formato de nível inválido: {level}, usando padrão (1,1)")
                     self.location_selected_signal.emit(location_name, 1, 1)
             except ValueError as e:
                 print(f"❌ Erro ao parsear nível {level}: {e}")
-                # Usar valores padrão em caso de erro
                 self.location_selected_signal.emit(location_name, 1, 1)
     def show_location_info(self, location_name: str, level: str):
             if hasattr(self, 'info_popup') and self.info_popup:
@@ -565,7 +520,6 @@ class MapScreen(QMainWindow):
             """)
             
             self.info_popup.show()
-            # Auto-ocultar após 4 segundos
             QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)        
             
             if self.font_manager:
@@ -588,11 +542,8 @@ class MapScreen(QMainWindow):
             # Auto-ocultar -> 3000 = 3 segundos (presta atenção nisso ANAAAAAAAAA)
             QTimer.singleShot(4000, lambda: self.info_popup.hide() if self.info_popup else None)
 
-            # Retornar o nível para ser usado no QuizGame
             return level
     def show_menu(self):
-        """Abre a tela de menu"""
-        # Obter referência do game_screen através do parent (GameManager)
         game_screen = None
         if hasattr(self.parent(), 'game_screen'):
             game_screen = self.parent().game_screen
@@ -604,11 +555,9 @@ class MapScreen(QMainWindow):
             game_screen=game_screen
         )
         
-        # Tornar o menu modal (bloqueia interação com a janela pai)
         self.menu_screen.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.menu_screen.show()
 
-# No arquivo prologo.py, modifique a classe GameManager:
 
 class GameManager(QMainWindow):
     def __init__(self, original_game_screen=None, tela_login=None, id_usuario=None, id_turma=None):
@@ -616,9 +565,8 @@ class GameManager(QMainWindow):
         self.setWindowTitle("Raízes Ocultas")
         self.setFixedSize(1000, 700)
         
-        # Armazenar o ID da turma
         self.id_turma = id_turma
-        print(f"🎮 Turma selecionada: {self.id_turma}")
+        print(f"Turma selecionada: {self.id_turma}")
         
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
@@ -626,7 +574,6 @@ class GameManager(QMainWindow):
         self.font_manager = FontManager()
         self.load_fonts()
         
-        # Armazenar referência para o GameScreen original (se fornecido)
         self.original_game_screen = original_game_screen
         self.tela_login = tela_login
         self.id_usuario = id_usuario
@@ -637,7 +584,6 @@ class GameManager(QMainWindow):
         self.stacked_widget.addWidget(self.prologue_screen)
         self.stacked_widget.addWidget(self.map_screen)
         
-        # Conectar botão menu ao método show_menu
         self.map_screen.back_button.clicked.connect(self.map_screen.show_menu)
         self.map_screen.skip_button.clicked.connect(self.start_game)
         
@@ -646,19 +592,15 @@ class GameManager(QMainWindow):
         self.map_screen.location_selected_signal.connect(self.iniciar_quiz)
         
     def iniciar_quiz(self, location_name, dificuldade, classe):
-        """Inicia o quiz com os parâmetros da fase selecionada"""
         print(f"🎮 Iniciando quiz: {location_name}, Dificuldade: {dificuldade}, Classe: {classe}")
         
-        # Obter perguntas já respondidas por esta turma
         perguntas_respondidas = self.obter_perguntas_respondidas()
         
         try:
-            # Executar o quiz em um processo separado
             import subprocess
             import sys
             import os
             
-            # Obter o diretório atual do script
             current_dir = os.path.dirname(os.path.abspath(__file__))
             quiz_launcher_path = os.path.join(current_dir, "quiz_launcher.py")
             
@@ -666,7 +608,6 @@ class GameManager(QMainWindow):
             print(f"📁 Diretório atual: {current_dir}")
             print(f"📋 Arquivos no diretório: {os.listdir(current_dir)}")
             
-            # Verificar se o arquivo existe
             if not os.path.exists(quiz_launcher_path):
                 print(f"❌ Arquivo quiz_launcher.py não encontrado!")
                 print(f"📁 Caminho verificado: {quiz_launcher_path}")
@@ -681,7 +622,7 @@ class GameManager(QMainWindow):
                 str(perguntas_respondidas)
             ]
             
-            print(f"🚀 Executando: {' '.join(args)}")
+            print(f"Executando: {' '.join(args)}")
             self.quiz_process = subprocess.Popen(args)
             
         except Exception as e:
@@ -690,7 +631,6 @@ class GameManager(QMainWindow):
             QMessageBox.critical(self, "Erro", f"Não foi possível iniciar o quiz: {str(e)}")
 
     def ao_fechar_quiz(self, quiz_root):
-        """Chamado quando o quiz é fechado"""
         try:
             quiz_root.destroy()
             # Mostrar novamente a janela do mapa
@@ -704,7 +644,6 @@ class GameManager(QMainWindow):
         pasta_db = "database"
         nome_banco = "raizes_ocultas.db"
         caminho_completo = os.path.join(pasta_db, nome_banco)
-        """Obtém os IDs das perguntas já respondidas pela turma"""
         if not self.id_turma:
             return []
             
@@ -742,32 +681,23 @@ class GameManager(QMainWindow):
     def show_map(self):
         print("🗺️ Abrindo mapa...")
         self.stacked_widget.setCurrentWidget(self.map_screen)
-        self.show()  # Certificar que a janela está visível
-    
+        self.show()  
     def start_game(self):
-        print("🎮 Iniciando o jogo...")
-        # Importar e iniciar a nova tela de jogo
         import sys
         import os
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
         from game import GameScreen_Game
-        
-        # Criar e mostrar a tela de jogo
         self.game_screen = GameScreen_Game()
         self.game_screen.show()
         
-        # Esconder o GameManager atual
         self.hide()
     
     def show_game_screen(self):
-        """Mostra a tela inicial do jogo (game_screen)"""
         self.close()
         
         if self.original_game_screen:
-            # Usar a instância original do GameScreen
             self.original_game_screen.show()
         else:
-            # Criar uma nova instância com os parâmetros corretos
             import sys
             import os
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -786,13 +716,11 @@ class BubbleWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Desenhar o bubble principal
         rect = self.rect().adjusted(10, 10, -10, -40)
         painter.setBrush(self.bubble_color)
         painter.setPen(self.border_color)
         painter.drawRoundedRect(rect, 20, 20)
         
-        # Desenhar a "cauda" do bubble apontando para cima
         tail_points = [
             rect.center().x() - 15, rect.top(),
             rect.center().x() + 15, rect.top(),
@@ -813,7 +741,7 @@ class TypewriterLabel(QLabel):
         self.full_text = ""
         self.current_text = ""
         self.current_index = 0
-        self.typing_speed = 50  # ms entre cada caractere
+        self.typing_speed = 50  
         self.timer = QTimer()
         self.timer.timeout.connect(self.add_next_character)
         
@@ -848,15 +776,11 @@ class PrologoRPG(QMainWindow):
         self.on_finish_callback = on_finish_callback
         self.current_text_index = 0
         
-        print("🚀 Iniciando Prólogo RPG...")
         
-        # Inicializar gerenciador de fontes (será passado pelo GameManager)
         self.font_manager = FontManager()
         
-        # Carregar fontes personalizadas
         self.load_custom_fonts()
         
-        # Textos do prólogo
         self.prologo_texts = [
             "Há muito tempo, nas terras místicas de Mato Grosso...",
             "Onde as raízes da cultura se entrelaçam com os segredos da natureza...",
@@ -891,34 +815,24 @@ class PrologoRPG(QMainWindow):
         
         # Defina aqui os caminhos para suas fontes
         font_paths = {
-            "titulo": "assets/fonts/Ghost theory 2.ttf",          # Para título do jogo
-            "narração": "assets/fonts/White Storm.otf",      # Para texto de narração
-            "botoes": "assets/fonts/firstorder.ttf",        # Para texto dos botões
-            "dialogo": "assets/fonts/Elementary_Gothic_Bookhand.ttf",   # Para diálogos de personagens
+            "titulo": "assets/fonts/Ghost theory 2.ttf",   #tittle
+            "narração": "assets/fonts/White Storm.otf",     #narracao
+            "botoes": "assets/fonts/firstorder.ttf",       #buttons
+            "dialogo": "assets/fonts/Elementary_Gothic_Bookhand.ttf",  #dialogs
         }
         
-        # Carregar cada fonte (se existir)
         for font_name, font_path in font_paths.items():
             self.font_manager.load_font(font_path, font_name)
         
-        print(f"🎯 Fontes carregadas: {list(self.font_manager.loaded_fonts.keys())}")
+        print(f"Fontes carregadas: {list(self.font_manager.loaded_fonts.keys())}")
         
-        # Lista final de fontes carregadas
-        print(f"📚 RESUMO - Fontes finais carregadas:")
-        for key, family in self.font_manager.loaded_fonts.items():
-            print(f"   🔑 {key} -> {family}")
         
     def setup_ui(self):
         self.setWindowTitle("Raízes Ocultas - Prólogo")
         self.setFixedSize(1000, 700)
-        
-        print("🎨 Configurando interface...")
-        
-        # Widget principal
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         
-        # Layout principal
         main_layout = QVBoxLayout(main_widget)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -927,7 +841,6 @@ class PrologoRPG(QMainWindow):
         self.background_label = QLabel()
         self.background_label.setGeometry(0, 0, 1000, 700)
         
-        # Criar fundo gradiente
         self.background_label.setStyleSheet("""
             QLabel {
                 background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1,
@@ -942,7 +855,6 @@ class PrologoRPG(QMainWindow):
         self.title_label = QLabel("Raizes Ocultas")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        # Aplicar fonte personalizada ao título
         title_font = self.font_manager.get_font("titulo", size=32, bold=True)
         self.title_label.setFont(title_font)
         print(f"🏷️ Fonte do título aplicada: {title_font.family()}")
@@ -966,7 +878,6 @@ class PrologoRPG(QMainWindow):
         character_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         character_layout.setSpacing(20)
         
-        # Container do personagem
         character_container = QWidget()
         character_container.setFixedSize(200, 250)
         character_container.setStyleSheet("""
@@ -977,12 +888,10 @@ class PrologoRPG(QMainWindow):
             }
         """)
         
-        # Imagem do personagem (ou placeholder)
         self.character_image = QLabel()
         self.character_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.character_image.setFixedSize(180, 200)
         
-        # Tentar carregar imagem do personagem
         character_path = "assets/ScreenElements/gamescreen/NPCs/capivara-guia.png"
         if os.path.exists(character_path):
             pixmap = QPixmap(character_path).scaled(
@@ -993,7 +902,6 @@ class PrologoRPG(QMainWindow):
             self.character_image.setPixmap(pixmap)
 
         else:
-            # Placeholder se não encontrar a imagem
             self.character_image.setText("🧙‍♂️")
             placeholder_font = self.font_manager.get_font("dialogo", size=60)
             self.character_image.setFont(placeholder_font)
@@ -1002,36 +910,30 @@ class PrologoRPG(QMainWindow):
                 background: transparent;
             """)
         
-        # Layout do personagem
         char_layout = QVBoxLayout(character_container)
         char_layout.addWidget(self.character_image)
         
         character_layout.addWidget(character_container)
         main_layout.addLayout(character_layout)
         
-        # === ESPAÇAMENTO ===
+        # === ESPACAMENTO ===
         main_layout.addSpacing(30)
         
         # === BUBBLE DE TEXTO ===
         bubble_container = QWidget()
         bubble_container.setFixedHeight(200)
         
-        # Bubble customizado
         self.bubble = BubbleWidget()
         bubble_layout = QVBoxLayout(self.bubble)
         bubble_layout.setContentsMargins(30, 25, 30, 50)
-        
-        # Label de texto com efeito de digitação
         self.text_label = TypewriterLabel()
         self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.text_label.setWordWrap(True)
-        
-        # Aplicar fonte personalizada ao texto de narração
+
         narration_font = self.font_manager.get_font("narração", size=22, bold=False)
         self.text_label.setFont(narration_font)
         print(f"📝 Fonte da narração aplicada: {narration_font.family()}")
         
-        # Remover font-weight do CSS para não conflitar
         self.text_label.setStyleSheet("""
             QLabel {
                 color: #2c3e50;
@@ -1040,27 +942,22 @@ class PrologoRPG(QMainWindow):
             }
         """)
         
-        # Conectar sinal de fim da digitação
         self.text_label.typing_finished.connect(self.on_typing_finished)
         
         bubble_layout.addWidget(self.text_label)
         
-        # Layout do bubble
         bubble_outer_layout = QHBoxLayout(bubble_container)
         bubble_outer_layout.addWidget(self.bubble)
         
         main_layout.addWidget(bubble_container)
         
-        # === BOTÕES DO PRÓLOGO (LADO A LADO) ===
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
-        # Botão Pular
         self.skip_button = QPushButton("⏭️ Pular")
         self.skip_button.setFixedSize(150, 45)
         self.skip_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        # Aplicar fonte personalizada ao botão pular
         skip_font = self.font_manager.get_font("botoes", size=14, bold=True)
         self.skip_button.setFont(skip_font)
         
@@ -1087,21 +984,17 @@ class PrologoRPG(QMainWindow):
         
         self.skip_button.clicked.connect(self.skip_prologue)
         
-        # Espaçamento entre os botões
         button_layout.addWidget(self.skip_button)
         button_layout.addSpacing(20)
         
-        # Botão Continuar
         self.continue_button = QPushButton("Continuar ▶")
         self.continue_button.setFixedSize(150, 45)
         self.continue_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        # Aplicar fonte personalizada ao botão
         button_font = self.font_manager.get_font("botoes", size=14, bold=True)
         self.continue_button.setFont(button_font)
-        print(f"🔘 Fonte do botão aplicada: {button_font.family()}")
+        print(f"Fonte do botão aplicada: {button_font.family()}")
         
-        # Remover font-weight do CSS para não conflitar com a fonte
         self.continue_button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,
@@ -1123,7 +1016,7 @@ class PrologoRPG(QMainWindow):
         """)
         
         self.continue_button.clicked.connect(self.next_text)
-        self.continue_button.hide()  # Inicialmente escondido
+        self.continue_button.hide()  
         
         button_layout.addWidget(self.continue_button)
         button_layout.addStretch()
@@ -1132,7 +1025,6 @@ class PrologoRPG(QMainWindow):
         main_layout.addStretch()
         
     def setup_animations(self):
-        # Animação de fade in do fundo
         self.background_fade = QGraphicsOpacityEffect()
         self.background_label.setGraphicsEffect(self.background_fade)
         
@@ -1142,7 +1034,6 @@ class PrologoRPG(QMainWindow):
         self.fade_animation.setEndValue(1.0)
         self.fade_animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         
-        # Animação de aparição do botão
         self.button_fade = QGraphicsOpacityEffect()
         self.continue_button.setGraphicsEffect(self.button_fade)
         
@@ -1153,10 +1044,8 @@ class PrologoRPG(QMainWindow):
         
     def start_prologue(self):
         print("▶️ Iniciando prólogo...")
-        # Iniciar animação do fundo
         self.fade_animation.start()
         
-        # Aguardar um pouco e iniciar o primeiro texto
         QTimer.singleShot(1000, self.show_first_text)
     
     def show_first_text(self):
@@ -1173,22 +1062,17 @@ class PrologoRPG(QMainWindow):
         self.current_text_index += 1
         
         if self.current_text_index < len(self.prologo_texts):
-            # Próximo texto
             QTimer.singleShot(500, self.show_first_text)
         else:
-            # Fim do prólogo - adicionar botão "Começar"
             self.show_start_button()
     
     def show_start_button(self):
-        # Esconder o bubble de texto
         self.bubble.hide()
         
-        # Criar botão "Começar"
         self.start_button = QPushButton("🎮 Começar Aventura")
         self.start_button.setFixedSize(250, 60)
         self.start_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        # Aplicar fonte personalizada ao botão
         start_font = self.font_manager.get_font("botoes", size=18, bold=True)
         self.start_button.setFont(start_font)
         
@@ -1217,17 +1101,14 @@ class PrologoRPG(QMainWindow):
         
         self.start_button.clicked.connect(self.start_game)
         
-        # Posicionar o botão no centro da tela
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         button_layout.addWidget(self.start_button)
         button_layout.addStretch()
         
-        # Adicionar ao layout principal
         main_layout = self.centralWidget().layout()
         main_layout.addLayout(button_layout)
         
-        # Animação de aparição do botão
         self.start_button_fade = QGraphicsOpacityEffect()
         self.start_button.setGraphicsEffect(self.start_button_fade)
         
@@ -1237,10 +1118,7 @@ class PrologoRPG(QMainWindow):
         self.start_button_animation.setEndValue(1.0)
         self.start_button_animation.start()
     
-    def skip_prologue(self):
-        print("⏭️ Pulando prólogo...")
-        
-        # Parar qualquer animação/timer ativo
+    def skip_prologue(self):        
         if hasattr(self, 'timer') and self.timer.isActive():
             self.timer.stop()
         
@@ -1250,37 +1128,29 @@ class PrologoRPG(QMainWindow):
         if hasattr(self, 'button_animation') and self.button_animation.state() == QPropertyAnimation.State.Running:
             self.button_animation.stop()
         
-        # Ir direto para o mapa
         if self.on_finish_callback:
             self.on_finish_callback()
         else:
             self.close()
     
     def start_game(self):
-        """Iniciar o jogo (ir para game.py)"""
-        print("🎮 Iniciando o jogo...")
         try:
-            # Importar o game.py
             import sys
             import os
             sys.path.append(os.path.dirname(os.path.abspath(__file__)))
             from game import GameScreen_Game
             
-            # Criar e mostrar a tela de jogo
             self.game_screen = GameScreen_Game()
             self.game_screen.show()
             
-            # Fechar a tela atual
             self.close()
             
         except ImportError as e:
             print(f"Erro ao importar game.py: {e}")
-            # Fallback para callback original
             if self.on_finish_callback:
                 self.on_finish_callback()
     
     def finish_prologue(self):
-        print("🏁 Prólogo finalizado!")
         if self.on_finish_callback:
             self.on_finish_callback()
         else:
@@ -1310,7 +1180,6 @@ def show_prologue(parent=None, on_finish=None):
 
 
 def start_game_with_prologue(original_game_screen=None, tela_login=None, id_usuario=None):
-    """Função para iniciar o jogo com prólogo, preservando a instância original do GameScreen"""
     game_manager = GameManager(
         original_game_screen=original_game_screen,
         tela_login=tela_login,

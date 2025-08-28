@@ -13,9 +13,8 @@ class ListarTurmasDialog(QDialog):
         self.setFixedSize(500, 400)
         self.id_usuario = id_usuario
         self.turma_selecionada = None
-        self.parent = parent  # Armazenar referência ao parent
+        self.parent = parent  
         
-        # Layout principal
         layout = QVBoxLayout()
         self.setLayout(layout)
         
@@ -25,14 +24,12 @@ class ListarTurmasDialog(QDialog):
         lbl_titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_titulo)
         
-        # Área de scroll
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll_content = QWidget()
         scroll_layout = QVBoxLayout(scroll_content)
         scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
-        # Carrega as turmas
         self.carregar_turmas(scroll_layout)
         
         scroll.setWidget(scroll_content)
@@ -99,32 +96,25 @@ class ListarTurmasDialog(QDialog):
     
     def selecionar_turma(self):
         if self.turma_selecionada:
-            # Fecha o diálogo com resultado positivo
             self.accept()
             
-            # Chama o GameManager com o ID da turma selecionada
             self.iniciar_game_manager(self.turma_selecionada)
         else:
             QMessageBox.warning(self, "Aviso", "Selecione uma turma para continuar")
     
     def iniciar_game_manager(self, turma_id):
-        """Inicia o GameManager com o ID da turma selecionada"""
         try:
-            # Importar e criar o GameManager
             from front.Screens.GameScreen.prologo import GameManager
             
-            # Criar instância do GameManager passando o ID da turma
-            self.game_manager = GameManager(  # Armazenar como atributo
+            self.game_manager = GameManager(  
                 original_game_screen=self.parent,
                 tela_login=None,
                 id_usuario=self.id_usuario,
                 id_turma=turma_id
             )
             
-            # Fechar o diálogo de seleção de turma
             self.accept()
             
-            # Mostrar o GameManager
             self.game_manager.show()
             
         except ImportError as e:
@@ -138,7 +128,6 @@ class ListarTurmasDialog(QDialog):
         result = dialog.exec()
         
         if result == QDialog.DialogCode.Accepted:
-            # Retorna tanto o ID da turma quanto a instância do diálogo
             return dialog.turma_selecionada, dialog
         else:
             return None, None

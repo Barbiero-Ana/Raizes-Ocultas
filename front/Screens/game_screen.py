@@ -15,7 +15,7 @@ except ImportError:
 class GameScreen(QMainWindow):
     def __init__(self, tela_login=None, id_usuario=None):
         super().__init__()
-        self.id_usuario = id_usuario  # Armazena o ID do usuário
+        self.id_usuario = id_usuario  
         self.tela_login = tela_login
 
         self.setWindowTitle("Raízes Ocultas - Jogo")
@@ -258,7 +258,6 @@ class GameScreen(QMainWindow):
         botoes_inferiores.move(self.width() - botoes_inferiores.width() - 20, self.height() - botoes_inferiores.height() - 20)
         botoes_inferiores.show()
         
-        # Conectar eventos dos botões
         self.btn_novo_jogo.clicked.connect(self.abrir_tela_criar_turma)
         self.btn_carregar_jogo.clicked.connect(self.carregar_turma)  
         self.btn_estatisticas.clicked.connect(self.mostrar_estatisticas)
@@ -267,7 +266,7 @@ class GameScreen(QMainWindow):
 
     def abrir_tela_criar_turma(self):
         if ClassRegisterDialog:
-            self.class_register_screen = ClassRegisterDialog(self, id_usuario=self.id_usuario)  # Passa o id_usuario
+            self.class_register_screen = ClassRegisterDialog(self, id_usuario=self.id_usuario)  
             self.class_register_screen.exec()
         else:
             print("⚠️  Funcionalidade de criar turma não disponível")
@@ -275,15 +274,11 @@ class GameScreen(QMainWindow):
             QMessageBox.information(self, "Info", "Funcionalidade em desenvolvimento!")
     
     def carregar_turma(self):
-        # Substitua o método existente por este:
         dialog = ListarTurmasDialog(self, self.id_usuario)
         dialog.exec()
         
-    #Função de teste   
     def ir_direto_ao_jogo(self):
-        """Vai diretamente para o jogo sem passar pelo prólogo"""
         try:
-            # Importar o jogo da pasta GameScreen
             import sys
             import os
             game_path = os.path.join(os.path.dirname(__file__), 'GameScreen')
@@ -292,11 +287,9 @@ class GameScreen(QMainWindow):
             
             from GameScreen import GameScreen
             
-            # Criar e mostrar a tela de jogo
             self.direct_game = GameScreen()
             self.direct_game.show()
             
-            # Esconder a tela atual
             self.hide()
             
         except ImportError as e:

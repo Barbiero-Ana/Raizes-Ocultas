@@ -8,9 +8,9 @@ def setup_paths():
     
     paths_to_add = [
         project_root,                                    
-        os.path.join(project_root, 'front'),            # front
-        os.path.join(project_root, 'front', 'Screens'), # telas
-        os.path.join(project_root, 'assets')           # assets
+        os.path.join(project_root, 'front'),            
+        os.path.join(project_root, 'front', 'Screens'), 
+        os.path.join(project_root, 'assets')           
     ]
     
     for path in paths_to_add:
@@ -92,7 +92,6 @@ def initialize_database():
         return False
 
 def load_icon(relative_path):
-    """Carrega um ícone a partir do caminho relativo ao script principal"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     icon_path = os.path.join(base_dir, *relative_path.split('/'))
     
@@ -101,9 +100,7 @@ def load_icon(relative_path):
     print(f"⚠️ Ícone não encontrado: {icon_path}")
     return QIcon()  # Retorna ícone vazio se não encontrar
 
-def main():
-    print("🎮 === INICIANDO RAÍZES OCULTAS ===\n")
-    
+def main():    
     # Configuração para ícone na taskbar no Windows
     if sys.platform == 'win32':
         import ctypes
@@ -123,7 +120,6 @@ def main():
         app = QApplication(sys.argv)
         app.setApplicationName("Raízes Ocultas")
         
-        # Carrega o ícone principal
         app_icon = load_icon('assets/ScreenElements/gamescreen/logo-temp.png')
         
         if not app_icon.isNull():
@@ -137,7 +133,6 @@ def main():
         from front.Screens.Login_screen import TelaLogin        
         janela_login = TelaLogin()
         
-        # Define o mesmo ícone para a janela
         if not app_icon.isNull():
             janela_login.setWindowIcon(app_icon)
         

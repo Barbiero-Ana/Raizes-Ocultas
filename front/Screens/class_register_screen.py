@@ -130,7 +130,7 @@ class ClassRegisterDialog(QDialog):
         quantidade = int(self.combo_qtd_alunos.currentText())
         serie = self.combo_serie.currentText()
 
-        # Validar os dados
+        # vakidacoes dos dados
         if not nome:
             QMessageBox.warning(self, "Aviso", "O nome da turma é obrigatório!")
             return

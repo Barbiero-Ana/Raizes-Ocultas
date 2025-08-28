@@ -152,10 +152,9 @@ class TelaLogin(QMainWindow):
         email = self.input_email.text().strip()
         senha = self.input_senha.text().strip()
         
-        # Limpar mensagens anteriores
         self.label_mensagem.setText("")
         
-        # Validações básicas
+        # validacoes 
         if not email:
             self.label_mensagem.setText("Por favor, digite seu e-mail.")
             return None  # Retorna None quando não há email
@@ -164,31 +163,23 @@ class TelaLogin(QMainWindow):
             self.label_mensagem.setText("Por favor, digite sua senha.")
             return None  # Retorna None quando não há senha
         
-        # Validar credenciais usando o backend
+        # Validar
         try:
-            # Adicionar o caminho do backend
             sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
             from backend.login import Login
             
-            # Criar instância do sistema de login
             login_system = Login()
             
-            # Validar as credenciais
             sucesso, mensagem, id_usuario = login_system.realizar_login(email, senha)
             self.id_usuario = id_usuario
             if sucesso:
-                # Salvar o ID do usuário
                 self.id_usuario = id_usuario
                 print(f"Login bem-sucedido! ID do usuário: {id_usuario}")
                 
-                # Abrir o jogo com animação
                 self.abrir_game_animacao()
-                return id_usuario  # Retorna o id_usuario em caso de sucesso
+                return id_usuario  
             else:
-                # Mostrar mensagem de erro
                 self.label_mensagem.setText(mensagem)
-                
-                # Oferecer cadastro se o email não existir
                 if "não cadastrado" in mensagem.lower():
                     resposta = QMessageBox.question(
                         self,
@@ -198,12 +189,11 @@ class TelaLogin(QMainWindow):
                     )
                     if resposta == QMessageBox.StandardButton.Yes:
                         self.abrir_tela_cadastro()
-                return None  # Retorna None quando o login falha
-                        
+                return None 
         except Exception as e:
             print(f"Erro ao fazer login: {e}")
             self.label_mensagem.setText("Erro interno. Tente novamente.")
-            return None  # Retorna None em caso de exceção
+            return None  
     
     def abrir_tela_cadastro(self):
         self.tela_cadastro = TelaCadastro(tela_login_callback=self.show)
@@ -527,30 +517,24 @@ class TelaCadastro(QMainWindow):
             self.label_msg.setStyleSheet("color: red; font-size: 12px;")
             return
 
-        # Tentar cadastrar o usuário
         try:
-            # Importar a função de cadastro
             sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
             from backend.cadastrar import cadastrar_usuario_simples
             
-            # Usar parte do email como nome (ou poderia adicionar um campo de nome no formulário)
             nome = email.split('@')[0]
             
-            # Chamar a função de cadastro
             sucesso, mensagem, _ = cadastrar_usuario_simples(nome, email, senha)
             
             if sucesso:
                 self.label_msg.setText("Cadastro realizado com sucesso!")
                 self.label_msg.setStyleSheet("color: green; font-size: 13px;")
                 
-                # Limpar campos após cadastro bem-sucedido
                 self.input_email.clear()
                 self.input_senha.clear()
                 self.input_repetir_senha.clear()
                 self.input_captcha.clear()
                 self.checkbox_termos.setChecked(False)
                 
-                # Gerar novo captcha
                 self.num1 = random.randint(1, 10)
                 self.num2 = random.randint(1, 10)
                 self.resultado_captcha = self.num1 + self.num2
