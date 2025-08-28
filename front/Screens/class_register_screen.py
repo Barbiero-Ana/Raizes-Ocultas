@@ -5,17 +5,16 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QCursor
 from PyQt6.QtCore import Qt
 import sqlite3
-from backend.cadastrar_turma import CadastrarTurma  # Moved import to top level
-
+from backend.cadastrar_turma import CadastrarTurma  
 
 class ClassRegisterDialog(QDialog):
     def __init__(self, parent=None, id_usuario=None):
         super().__init__(parent)
-        self.id_usuario = id_usuario  # Armazena o id_usuario
+        self.id_usuario = id_usuario 
         self.setWindowTitle("Criar Nova Turma")
         self.setFixedSize(420, 580)
         self.setStyleSheet("background-color: #F8F8F8;")
-        self.id_usuario = id_usuario  # Armazenar o ID do usuário
+        self.id_usuario = id_usuario  
 
         main_widget = QWidget()
         layout = QVBoxLayout(main_widget)

@@ -1,7 +1,6 @@
 import sys
 import os
 import sqlite3
-import tkinter as tk
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton, 
     QVBoxLayout, QHBoxLayout, QGraphicsOpacityEffect, QStackedWidget
@@ -748,10 +747,13 @@ class GameManager(QMainWindow):
     def start_game(self):
         print("🎮 Iniciando o jogo...")
         # Importar e iniciar a nova tela de jogo
-        from GameScreen import game
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from game import GameScreen_Game
         
         # Criar e mostrar a tela de jogo
-        self.game_screen = game(parent=self)
+        self.game_screen = GameScreen_Game()
         self.game_screen.show()
         
         # Esconder o GameManager atual
@@ -1255,10 +1257,27 @@ class PrologoRPG(QMainWindow):
             self.close()
     
     def start_game(self):
-        """Iniciar o jogo (ir para o mapa)"""
+        """Iniciar o jogo (ir para game.py)"""
         print("🎮 Iniciando o jogo...")
-        if self.on_finish_callback:
-            self.on_finish_callback()
+        try:
+            # Importar o game.py
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+            from game import GameScreen_Game
+            
+            # Criar e mostrar a tela de jogo
+            self.game_screen = GameScreen_Game()
+            self.game_screen.show()
+            
+            # Fechar a tela atual
+            self.close()
+            
+        except ImportError as e:
+            print(f"Erro ao importar game.py: {e}")
+            # Fallback para callback original
+            if self.on_finish_callback:
+                self.on_finish_callback()
     
     def finish_prologue(self):
         print("🏁 Prólogo finalizado!")

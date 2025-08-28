@@ -6,7 +6,9 @@ from PyQt6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QFrame, QGraphicsOpacityEffect
 )
 from PyQt6.QtGui import QPixmap, QFont, QCursor, QFontDatabase, QKeySequence
-from PyQt6.QtCore import Qt, QTimer, QRect, QPropertyAnimation, QEasingCurve, QPoint
+from PyQt6.QtCore import Qt, QTimer, QRect, QPropertyAnimation, QEasingCurve, QPoint, QUrl
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimediaWidgets import QVideoWidget
 
 class GameScreen_Game(QMainWindow):
     def __init__(self, parent=None):
@@ -45,6 +47,11 @@ class GameScreen_Game(QMainWindow):
         self.npc = None
         self.dialog_box = None
         self.in_dialog = False
+        
+        self.video_player = None
+        self.video_widget = None
+        self.audio_output = None
+        self.narration_bubble = None
         
         self.setup_game_ui()
         self.setup_character()
@@ -588,6 +595,16 @@ class GameScreen_Game(QMainWindow):
                 'target_scene': 'secret_cave',
                 'appears_in_scene': 'forest',  
                 'disappears_after_use': True  
+            },
+            {
+                'name': 'ribeirinha_trigger',
+                'x': 850, 'y': 450, 'width': 80, 'height': 80,
+                'spawn_x': 100, 'spawn_y': 400,
+                'description': 'Trilha da Parteira Ribeirinha',
+                'color': '#1e90ff',  # Azul para água/rio
+                'target_scene': 'walking_trail',
+                'appears_in_scene': 'secret_cave',
+                'disappears_after_use': False
             }
         ]
         
@@ -618,7 +635,13 @@ class GameScreen_Game(QMainWindow):
             'secret_cave': {
                 'background': "assets/ScreenElements/gamescreen/background/mt-forest.png",
                 'npcs': [{'x': 400, 'y': 300, 'type': 'ribeirinha'}],
-                'description': 'Caverna Secreta - Sem saídas visíveis'
+                'description': 'Caverna Secreta - Parteira Ribeirinha'
+            },
+            'walking_trail': {
+                'background': "assets/ScreenElements/gamescreen/background/walking-level-1.mp4",
+                'npcs': [],
+                'description': 'Trilha Ancestral - Caminho dos Antepassados',
+                'is_video': True
             }
         }
         
@@ -723,10 +746,19 @@ class GameScreen_Game(QMainWindow):
         self.narration_label.setText(f"Você chegou em: {scene_data['description']}")
         
     def update_scene_background(self, background_path):
+        # Verificar se é um arquivo de vídeo
+        if background_path.endswith('.mp4') and os.path.exists(background_path):
+            self.setup_video_background(background_path)
+            return
+        
+        # Limpar vídeo se não for cena de vídeo
+        self.cleanup_video_background()
+        
         if os.path.exists(background_path):
             pixmap = QPixmap(background_path)
             if not pixmap.isNull():
                 self.background_image.setPixmap(pixmap)
+                self.background_image.show()
                 return
                 
         # Fallback para gradientes baseados na cena
@@ -734,12 +766,14 @@ class GameScreen_Game(QMainWindow):
             'forest': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #1a3d1a, stop:1 #2d5a2d);",
             'village': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #8B4513, stop:1 #D2691E);",
             'river': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #1e3a5f, stop:1 #2e5a8f);",
-            'secret_cave': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #2b1810, stop:1 #4a2c1a);"
+            'secret_cave': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #2b1810, stop:1 #4a2c1a);",
+            'walking_trail': "background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #3e4b2e, stop:1 #5a6b3e);"
         }
         
         color_style = scene_colors.get(self.current_scene, scene_colors.get('main', ""))
         if color_style:
             self.background_image.setStyleSheet(f"QLabel {{ {color_style} }}")
+            self.background_image.show()
             
     def setup_scene_npcs(self, npcs_data):
         for npc_data in npcs_data:
@@ -1069,6 +1103,138 @@ Configure as posições ideais e pressione Ctrl+S para salvar!
     def transition_complete(self):
         self.is_transitioning = False
         self.auto_dialog_triggered = False  # Reset para nova cena
+    
+    def setup_video_background(self, video_path):
+        """Configura vídeo como fundo da cena"""
+        # Limpar player anterior se existir
+        self.cleanup_video_background()
+        
+        # Ocultar background image
+        if self.background_image:
+            self.background_image.hide()
+        
+        # Criar widget de vídeo
+        self.video_widget = QVideoWidget(self.game_area)
+        self.video_widget.setFixedSize(1000, 550)
+        self.video_widget.move(0, 0)
+        
+        # Criar player de mídia
+        self.video_player = QMediaPlayer()
+        self.audio_output = QAudioOutput()
+        
+        # Conectar player ao widget
+        self.video_player.setVideoOutput(self.video_widget)
+        self.video_player.setAudioOutput(self.audio_output)
+        
+        # Configurar vídeo para loop
+        self.video_player.mediaStatusChanged.connect(self.on_video_status_changed)
+        
+        # Carregar e reproduzir vídeo
+        video_url = QUrl.fromLocalFile(os.path.abspath(video_path))
+        self.video_player.setSource(video_url)
+        
+        # Mostrar widget
+        self.video_widget.lower()  # Colocar atrás dos outros elementos
+        self.video_widget.show()
+        
+        # Iniciar reprodução
+        self.video_player.play()
+        
+        # Criar bubble de narração após 2 segundos
+        QTimer.singleShot(2000, self.create_narration_bubble)
+        
+        print(f"🎬 Vídeo de fundo configurado: {video_path}")
+    
+    def cleanup_video_background(self):
+        """Remove o vídeo de fundo atual"""
+        if self.video_player:
+            self.video_player.stop()
+            self.video_player = None
+            
+        if self.video_widget:
+            self.video_widget.hide()
+            self.video_widget.deleteLater()
+            self.video_widget = None
+            
+        if self.audio_output:
+            self.audio_output = None
+            
+        if self.narration_bubble:
+            self.narration_bubble.hide()
+            self.narration_bubble.deleteLater()
+            self.narration_bubble = None
+    
+    def on_video_status_changed(self, status):
+        """Gerencia o status do vídeo para fazer loop"""
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            # Reiniciar o vídeo quando terminar
+            self.video_player.setPosition(0)
+            self.video_player.play()
+    
+    def create_narration_bubble(self):
+        """Cria o bubble de narração na parte inferior da tela"""
+        if self.narration_bubble:
+            return
+            
+        self.narration_bubble = QLabel(self.game_area)
+        self.narration_bubble.setFixedSize(900, 180)
+        self.narration_bubble.setWordWrap(True)
+        
+        # Posicionar na parte inferior central
+        bubble_x = (self.game_area.width() - self.narration_bubble.width()) // 2
+        bubble_y = self.game_area.height() - 200
+        self.narration_bubble.move(bubble_x, bubble_y)
+        
+        # Estilo do bubble
+        self.narration_bubble.setStyleSheet("""
+            QLabel {
+                background-color: rgba(0, 0, 0, 0.9);
+                color: #FFD700;
+                padding: 15px;
+                border-radius: 20px;
+                border: 3px solid #FFD700;
+                font-size: 14px;
+                font-weight: bold;
+                line-height: 1.3;
+            }
+        """)
+        
+        # Texto inicial da narração
+        narration_text = """
+        🌿 "Você trilha o caminho sagrado dos povos originários de Mato Grosso...
+        
+        🏹 PRIMEIRO NÍVEL - O CHAMADO DA FLORESTA:
+        Aqui vivem os Bororo, guardiões da sabedoria ancestral. Suas pinturas corporais 
+        contam histórias milenares, e o urucum vermelho marca rituais sagrados.
+        
+        🎭 DESAFIO FINAL: Prepare-se para enfrentar o GUARDIÃO DA NEBLINA - 
+        ser místico de cipós e fumaça que testará seu conhecimento sobre 
+        mitos indígenas e a cosmovisão dos povos originários.
+        
+        💡 Lembre-se: A oralidade preserva nossa cultura. Os pajés são os sábios.
+        Os grafismos corporais são mapas espirituais de nossa identidade!"
+        """
+        
+        self.narration_bubble.setText(narration_text.strip())
+        self.narration_bubble.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Mostrar com efeito fade-in
+        self.bubble_fade_effect = QGraphicsOpacityEffect()
+        self.bubble_fade_effect.setOpacity(0.0)
+        self.narration_bubble.setGraphicsEffect(self.bubble_fade_effect)
+        
+        # Animação fade-in
+        self.bubble_animation = QPropertyAnimation(self.bubble_fade_effect, b"opacity")
+        self.bubble_animation.setDuration(1000)
+        self.bubble_animation.setStartValue(0.0)
+        self.bubble_animation.setEndValue(1.0)
+        self.bubble_animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        
+        self.narration_bubble.show()
+        self.narration_bubble.raise_()  # Trazer para frente
+        self.bubble_animation.start()
+        
+        print("💬 Bubble de narração criado")
 
     def closeEvent(self, event):
         if hasattr(self, 'movement_timer'):
@@ -1085,6 +1251,10 @@ Configure as posições ideais e pressione Ctrl+S para salvar!
             self.fade_animation.stop()
         if hasattr(self, 'fade_in_animation') and self.fade_in_animation:
             self.fade_in_animation.stop()
+        if hasattr(self, 'bubble_animation') and self.bubble_animation:
+            self.bubble_animation.stop()
+        # Limpar recursos de vídeo
+        self.cleanup_video_background()
         super().closeEvent(event)
 
 def main():
