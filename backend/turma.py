@@ -11,6 +11,3 @@ class Turma:
         self.pontos_acertos = acertos
         self.pontos_erros = erros
         self.usuario = id_usuario
-   
-    
-

@@ -14,7 +14,6 @@ class Login:
     
     def verificar_credenciais(self, email: str, senha: str) -> tuple:
         """
-        Verifica as credenciais de login do usuário
         
         Args:
             email: Email do usuário
@@ -31,10 +30,8 @@ class Login:
             with conn:
                 cursor = conn.cursor()
                 
-                # Hash da senha fornecida
                 senha_hash = hashlib.sha256(senha.encode()).hexdigest()
                 
-                # Busca usuário pelo email
                 cursor.execute("""
                     SELECT id_usuario, cripto_senha, deletado 
                     FROM Usuario 
@@ -63,9 +60,7 @@ class Login:
             self.db.db.fechar_conexao()
 
     def realizar_login(self, email: str, senha: str) -> tuple:
-        """
-        Realiza o processo completo de login com validações
-        
+        """        
         Args:
             email: Email do usuário
             senha: Senha em texto puro
@@ -73,14 +68,11 @@ class Login:
         Returns:
             tuple: (sucesso: bool, mensagem: str, id_usuario: int)
         """
-        # Validação dos campos
         if not email.strip() or not senha.strip():
             return False, "Preencha todos os campos", None
             
-        # Valida o email
         valido, msg = Validador.validar_email(email)
         if not valido:
             return False, msg, None
             
-        # Verifica  no banco
         return self.verificar_credenciais(email, senha)

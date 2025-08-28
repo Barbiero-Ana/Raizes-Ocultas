@@ -5,19 +5,16 @@ import sqlite3
 class CadastrarTurma:
     def __init__(self, id_usuario):
         self.id_usuario = id_usuario
-        # Garante que o diretório database existe
         if not os.path.exists("database"):
             os.makedirs("database")
             
         db_path = os.path.join("database", "raizes_ocultas.db")
         self.db = Funcoes_DataBase(db_path)
         
-        # Verifica se o banco existe e tem as tabelas necessárias
         if not self.verificar_banco_pronto():
             raise Exception("Banco de dados não está pronto para uso")
     
     def verificar_banco_pronto(self):
-        """Verifica se o banco de dados existe e tem a tabela Turma"""
         try:
             conn = self.db.db.conectar_no_banco()
             if conn is None:
@@ -48,7 +45,6 @@ class CadastrarTurma:
     
     def cadastrar_turma(self, nome: str, quantidade: int, serie: str):
         """Cadastra uma nova turma associada ao usuário"""
-        # Valores padrão para nova turma
         vida_max = 3
         vida_atual = 3
         pontos_acerto = 0
@@ -56,12 +52,10 @@ class CadastrarTurma:
         vivo = True
         
         try:
-            # Valida os dados primeiro
             valido, msg = self.validar_dados_cadastro_turma(nome, quantidade, serie)
             if not valido:
                 return False, msg, None
 
-            # Inserir no banco com todos os campos necessários
             turma_id = self.db.inserir_turma(
                 nome.strip(),
                 quantidade,
@@ -71,7 +65,7 @@ class CadastrarTurma:
                 pontos_acerto,
                 pontos_erro,
                 vivo,
-                self.id_usuario  # Usa o id_usuario armazenado
+                self.id_usuario  
             )
 
             if turma_id:
@@ -88,7 +82,6 @@ class CadastrarTurma:
             return False, f"Erro ao cadastrar turma: {str(e)}", None
     
     def listar_turmas_usuario(self, id_usuario: int) -> list:
-        """Retorna todas as turmas criadas por um usuário específico"""
         try:
             conn = self.db.db.conectar_no_banco()
             if conn is None:
@@ -111,7 +104,6 @@ class CadastrarTurma:
             self.db.db.fechar_conexao()        
     @staticmethod
     def cadastrar_turma_simples(nome: str, quantidade: int, serie: str, id_usuario: int) -> tuple:
-        """Método estático simplificado para cadastro de turma"""
         cadastro = CadastrarTurma(id_usuario)
         return cadastro.cadastrar_turma(nome, quantidade, serie)
         
